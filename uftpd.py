@@ -25,6 +25,7 @@ ftpsocket = None
 datasocket = None
 command_client = None
 DATA_PORT = 13333
+CHUNK_SIZE = const(256)
 
 STOR_flag = False
 client_busy = False
@@ -67,17 +68,17 @@ def make_description(path, fname, full):
     
 def send_file_data(path, data_client):
     with open(path, "r") as file:
-        chunk = file.read(512)
+        chunk = file.read(CHUNK_SIZE)
         while len(chunk) > 0:
             data_client.sendall(chunk)
-            chunk = file.read(512)
+            chunk = file.read(CHUNK_SIZE)
 
 def save_file_data(path, data_client, mode):
     with open(path, mode) as file:
-        chunk = data_client.read(512)
+        chunk = data_client.read(CHUNK_SIZE)
         while len(chunk) > 0:
             file.write(chunk)
-            chunk = data_client.read(512)
+            chunk = data_client.read(CHUNK_SIZE)
 
 def get_absolute_path(cwd, payload):
     # Just a few special cases "..", "." and ""
@@ -206,34 +207,28 @@ def exec_ftp_command(cl):
                 cl.sendall("150 Here comes the directory listing.\r\n")
                 send_list_data(place, data_client, command == "LIST" or payload.startswith("-l"))
                 cl.sendall("226 Listed.\r\n")
+                data_client.close()
             except:
                 cl.sendall(msg_550_fail)
         elif command == "RETR":
             try:
                 data_client, data_addr = datasocket.accept()
                 message(2, "FTP Data connection from:", data_addr)
-                send_file_data(path, data_client)
                 cl.sendall("150 Opening data connection.\r\n")
+                send_file_data(path, data_client)
                 cl.sendall("226 Transfer complete.\r\n")
+                data_client.close()
             except:
                 cl.sendall(msg_550_fail)
-        elif command == "STOR":
+        elif command == "STOR" or command == "APPE":
             try:
                 data_client, data_addr = datasocket.accept()
                 message(2, "FTP Data connection from:", data_addr)
                 cl.sendall("150 Ok to send data.\r\n")
-                save_file_data(path, data_client, "w")
+                save_file_data(path, data_client, "w" if command == "STOR" else "a")
                 cl.sendall("226 Transfer complete.\r\n")
+                data_client.close()
                 STOR_flag = True
-            except:
-                cl.sendall(msg_550_fail)
-        elif command == "APPE":
-            try:
-                data_client, data_addr = datasocket.accept()
-                message(2, "FTP Data connection from:", data_addr)
-                cl.sendall("150 Ok to send data.\r\n")
-                save_file_data(path, data_client, "a")
-                cl.sendall("226 Transfer complete.\r\n")
             except:
                 cl.sendall(msg_550_fail)
         elif command == "DELE":
@@ -276,8 +271,8 @@ def exec_ftp_command(cl):
         message(0, "Exception in exec_ftp_command: ", err)  
         cl.close()
         client_busy = False
-    if data_client is not None:
-        data_client.close()
+        if data_client is not None:
+            data_client.close()
 
 def accept_ftp_connect(ftpsocket):
     global command_client, client_busy
