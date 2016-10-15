@@ -26,6 +26,7 @@ datasocket = None
 command_client = None
 DATA_PORT = 13333
 CHUNK_SIZE = const(256)
+SO_SETCALLBACK = const(20)
 
 STOR_flag = False
 client_busy = False
@@ -133,9 +134,9 @@ def message(level, *args):
         print()
         
 def exec_ftp_command(cl):
-    global command_client, client_busy
+    global client_busy
     global cwd, fromname
-    global ftpsocket, datasocket
+    global datasocket
     global DATA_PORT, STOR_flag
     
     try:
@@ -286,13 +287,13 @@ def accept_ftp_connect(ftpsocket):
         message(1, "FTP connection from:", remote_addr)
         cwd = '/'
         fromname = None
-        command_client.setsockopt(socket.SOL_SOCKET, 20, exec_ftp_command)
+        command_client.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, exec_ftp_command)
         command_client.sendall("220 Hello, this is the ESP8266.\r\n")
     else:
         # accept and close immediately
-        temp_client, remote_addr = ftpsocket.accept()
+        temp_client, temp_addr = ftpsocket.accept()
         temp_client.close()
-        message(2, "Rejected FTP connection from:", remote_addr)
+        message(2, "Rejected FTP connection from:", temp_addr)
 
 def stop():
     global ftpsocket, datasocket
@@ -326,10 +327,9 @@ def start(port=21, verbose = 0):
     datasocket.bind(socket.getaddrinfo("0.0.0.0", DATA_PORT)[0][4])
 
     ftpsocket.listen(0)
-    ftpsocket.settimeout(60)
     datasocket.listen(0)
     datasocket.settimeout(10)
-    ftpsocket.setsockopt(socket.SOL_SOCKET, 20, accept_ftp_connect)
+    ftpsocket.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, accept_ftp_connect)
     
     for i in (network.AP_IF, network.STA_IF):
         wlan = network.WLAN(i)
