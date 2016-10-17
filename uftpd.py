@@ -28,7 +28,7 @@ DATA_PORT = 13333
 CHUNK_SIZE = const(256)
 SO_SETCALLBACK = const(20)
 
-STOR_flag = False
+ignore_empty = False
 client_busy = False
 verbose_l = 0
 cwd = '/'
@@ -43,17 +43,15 @@ def send_list_data(path, data_client, full):
         for fname in sorted(uos.listdir(path), key = str.lower):
             data_client.sendall(make_description(path, fname, full))
     except: # path may be a file name or pattern
-        pattern = path.split("/")[-1].lower()
-        path = path[:-(len(pattern) + 1)]
-        if path == "": path = "/"
+        path, pattern = split_path(path)
         for fname in sorted(uos.listdir(path), key = str.lower):
-            if fncmp(fname.lower(), pattern) == True:
+            if fncmp(fname, pattern) == True:
                 data_client.sendall(make_description(path, fname, full))
                 
 def make_description(path, fname, full):
     global month_name
     if full:
-        stat = uos.stat(get_absolute_path(path,fname))
+        stat = uos.stat(get_absolute_path(path, fname))
         file_permissions = "drwxr-xr-x" if (stat[0] & 0o170000 == 0o040000) else "-rw-r--r--"
         file_size = stat[6]
         tm = localtime(stat[7])
@@ -89,16 +87,18 @@ def get_absolute_path(cwd, payload):
         cwd = "/"
     for token in payload.split("/"):
         if token == '..':
-            if cwd != '/':
-                cwd = '/'.join(cwd.split('/')[:-1])
-                if cwd == '': 
-                    cwd = '/'
+            cwd = split_path(cwd)[0]
         elif token != '.' and token != '':
             if cwd == '/':
                 cwd += token
             else:
                 cwd = cwd + '/' + token
     return cwd
+    
+def split_path(path): # instead of path.rpartition('/')
+    tail = path.split('/')[-1]
+    head = path[:-(len(tail) + 1)]
+    return ('/' if head == '' else head, tail)
 
 # compare fname against pattern. Pattern may contain
 # wildcards ? and *.
@@ -126,7 +126,7 @@ def fncmp(fname, pattern):
     else:
         return False
         
-def message(level, *args):
+def log_msg(level, *args):
     global verbose_l
     if verbose_l >= level:
         for arg in args:
@@ -137,28 +137,29 @@ def exec_ftp_command(cl):
     global client_busy
     global cwd, fromname
     global datasocket
-    global DATA_PORT, STOR_flag
+    global DATA_PORT, ignore_empty
     
     try:
         gc.collect()
-        data_client = None
         data = cl.readline().decode("utf-8").rstrip("\r\n")
         if len(data) <= 0:
             # Empty packet, either close or ignore
-            if STOR_flag == False and client_busy == True:
+            if ignore_empty == False and client_busy == True:
                 cl.close()
                 client_busy = False
-                message(1, "Empty packet, connection closed")
+                log_msg(1, "Empty packet, connection closed")
             else:
-                message(2, "Empty packet ignored")
-                STOR_flag = False
+                log_msg(2, "Empty packet ignored")
+                ignore_empty = False
             return
         
-        STOR_flag = False
+        data_client = None
+        ignore_empty = False
+        
         command = data.split(" ")[0].upper()
-        payload = data[len(command):].lstrip()
+        payload = data[len(command):].lstrip() # partition is missing
         path = get_absolute_path(cwd, payload)
-        message(1, "Command={}, Payload={}, Path={}".format(command, payload, path))
+        log_msg(1, "Command={}, Payload={}, Path={}".format(command, payload, path))
         
         if command == "USER" or command == "PASS":
             cl.sendall("230 Logged in.\r\n")
@@ -171,6 +172,7 @@ def exec_ftp_command(cl):
         elif command == "QUIT":
             cl.sendall('221 Bye.\r\n')
             cl.close()
+            cl.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, None)
             client_busy = False
         elif command == "PWD":
             cl.sendall('257 "{}"\r\n'.format(cwd))
@@ -204,32 +206,32 @@ def exec_ftp_command(cl):
                 place = cwd
             try:
                 data_client, data_addr = datasocket.accept()
-                message(2, "FTP Data connection from:", data_addr)
+                log_msg(2, "FTP Data connection from:", data_addr)
                 cl.sendall("150 Here comes the directory listing.\r\n")
                 send_list_data(place, data_client, command == "LIST" or payload.startswith("-l"))
-                cl.sendall("226 Listed.\r\n")
+                cl.sendall("226 Done.\r\n")
                 data_client.close()
             except:
                 cl.sendall(msg_550_fail)
         elif command == "RETR":
             try:
                 data_client, data_addr = datasocket.accept()
-                message(2, "FTP Data connection from:", data_addr)
+                log_msg(2, "FTP Data connection from:", data_addr)
                 cl.sendall("150 Opening data connection.\r\n")
                 send_file_data(path, data_client)
                 cl.sendall("226 Transfer complete.\r\n")
                 data_client.close()
             except:
                 cl.sendall(msg_550_fail)
-        elif command == "STOR" or command == "APPE":
+        elif command == "STOR":
             try:
                 data_client, data_addr = datasocket.accept()
-                message(2, "FTP Data connection from:", data_addr)
+                log_msg(2, "FTP Data connection from:", data_addr)
                 cl.sendall("150 Ok to send data.\r\n")
-                save_file_data(path, data_client, "w" if command == "STOR" else "a")
+                save_file_data(path, data_client, "w")
                 cl.sendall("226 Transfer complete.\r\n")
                 data_client.close()
-                STOR_flag = True
+                ignore_empty = True
             except:
                 cl.sendall(msg_550_fail)
         elif command == "DELE":
@@ -265,15 +267,16 @@ def exec_ftp_command(cl):
                 cl.sendall(msg_550_fail)
         else:
             cl.sendall("502 Unsupported command.\r\n")
-            message(2, "Unsupported command {} with payload {}".format(command, payload))
+            log_msg(2, "Unsupported command {} with payload {}".format(command, payload))
     # handle unexpected errors
     # close all connections & exit
     except Exception as err:
-        message(0, "Exception in exec_ftp_command: ", err)  
-        cl.close()
-        client_busy = False
+        log_msg(0, "Exception in exec_ftp_command: {}, restarting server".format(err))
+        # cl.close()
+        # client_busy = False
         if data_client is not None:
             data_client.close()
+        restart() ### trial, maybe stop() is better
 
 def accept_ftp_connect(ftpsocket):
     global command_client, client_busy
@@ -284,7 +287,7 @@ def accept_ftp_connect(ftpsocket):
         client_busy = True
         command_client, remote_addr = ftpsocket.accept()
         command_client.settimeout(300) # 5 minutes timeout
-        message(1, "FTP connection from:", remote_addr)
+        log_msg(1, "FTP connection from:", remote_addr)
         cwd = '/'
         fromname = None
         command_client.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, exec_ftp_command)
@@ -293,21 +296,22 @@ def accept_ftp_connect(ftpsocket):
         # accept and close immediately
         temp_client, temp_addr = ftpsocket.accept()
         temp_client.close()
-        message(2, "Rejected FTP connection from:", temp_addr)
+        log_msg(2, "Rejected FTP connection from:", temp_addr)
 
 def stop():
     global ftpsocket, datasocket
     global command_client, client_busy
 
     if command_client is not None:
+        command_client.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, None)
         command_client.close()
         command_client = None
     client_busy = False
+    ftpsocket.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, None)
     if ftpsocket is not None:
         ftpsocket.close()
     if datasocket is not None:
         datasocket.close()
-        
 
 # start listening for ftp connections on port 21
 def start(port=21, verbose = 0):
