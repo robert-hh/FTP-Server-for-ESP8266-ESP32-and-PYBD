@@ -80,6 +80,11 @@ like XPWD instead of PWD, XCWD instead of CWD.
 
 - ES File Manager: Seems to work with file/directory view & navigate, file download
 
+**Windows 10 mobile**
+
+- Metro file manager: File/directory viewing & navigate works, copying out from ESP8266 to.
+Storing back start, but then stalls. Slow and chaotic sequence of FTP commands.
+
 ## Trouble shooting
 The only trouble observed so far was clients not releasing the connections.
 You may tell by the value of `uftp.client_list`.
@@ -89,3 +94,8 @@ is connected, then restart the server with with `uftpd.restart()`
 If you want to see what happens at the server, you may set verbose to 2.
 Just restart it with `uftpd.restart(verbose=2)`, or set `uftpd.verbose_l = 2`,
 and `uftpd.verbose_l = 0` to stop control messages again.
+
+## Files ##
+uftpd.py: Server source file  
+uftpd.mpy: Compiled version  
+README.md: This one  
