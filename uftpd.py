@@ -55,7 +55,7 @@ class FTP_client:
         except: # path may be a file name or pattern
             path, pattern = self.split_path(path)
             for fname in sorted(uos.listdir(path), key = str.lower):
-                if fncmp(fname, pattern) == True:
+                if self.fncmp(fname, pattern) == True:
                     data_client.sendall(self.make_description(path, fname, full))
                     
     def make_description(self, path, fname, full):
@@ -295,7 +295,7 @@ class FTP_client:
             log_msg(0, "Exception in exec_ftp_command: {}, restarting server".format(err))
             if data_client is not None:
                 data_client.close()
-            restart() ### trial, maybe stop() is better, or do nothing
+##            restart() ### trial, maybe stop() is better, or do nothing
         client_busy = False
             
 def log_msg(level, *args):
@@ -377,4 +377,4 @@ def restart(port=21, verbose = 0):
     sleep_ms(200)
     start(port, verbose)
     
-start(21, 2)
+start()
