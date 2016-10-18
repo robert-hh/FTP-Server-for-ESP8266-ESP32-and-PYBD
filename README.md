@@ -15,7 +15,6 @@ The frozen bytecode variant is preferred.
 
 The server has some limitations:
 - Passive mode only
-- Just one connection at a time. Further connection attempts will be rejected.
 - Limited wildcard support for the ls and nlist commands. Only `*` and `?` are
 supported.
 
@@ -52,27 +51,26 @@ managers. These are test results:
 - filezilla, fireftp: works fine, including loading into the editor & saving back.
 Take care to limit the number of session to 1. With FileZilla you have to connect
 using the server manager.
-- Nautilus: works fine, including loading into the editor & saving back. Nautilus
-sometimes tries to open a second connection, which is rejected and triggers an error
-message, which can be ignored. After that, it may not redraw the window by itself.
-Force redraw the with F5 key then.
+- Nautilus 3.14.1: works mostly, including loading into the editor & saving back. Sometimes
+it locks.
 - Thunar: works fine, including loading into the editor & saving back
-- Dolphin: view/navigate directories & and copy files. Opening files fails, since
-Dolphin tries to open a second connection.
+- Dolphin: works fine, including loading into the editor & saving back
+- Konqueror: works fine, including loading into the editor & saving back
 - Chrome, Firefox: view/navigate directories & and view files
 
 **Mac OS X, various Versions**
 
 - ftp: works like on Linux
 - Chrome, Firefox: view/navigate directories & and view files
-- Finder: connects, but locks most of the time in the attempt to display the
+- Finder: connects, but then locks in the attempt to display the
 top level directory w/o any activity visible at the server.
 - FileZilla etc: Full operation, once proper configured (see above)
 
 **Windows 10**
 
 - File explorer: view/navigate directories & and copy files. For editing files you have to copy them to your PC and back.  
-Windows explorer does not always release the connection when it is closed.
+Windows explorer does not always release the connection when it is closed, which
+just results in a silent connection.
 - ftp: practically useless, since passive mode is not supported and many
 non-standard commands are used for the communication to the server,
 like XPWD instead of PWD, XCWD instead of CWD.
