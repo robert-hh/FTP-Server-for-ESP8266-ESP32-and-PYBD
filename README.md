@@ -76,13 +76,16 @@ non-standard commands are used for the communication to the server,
 like XPWD instead of PWD, XCWD instead of CWD.
 - FileZilla etc: Full operation, once proper configured (see above)
 
+**Android**
+
+- ES File Manager: Seems to work with file/directory view & navigate, file download
+
 ## Trouble shooting
-The only trouble observed so far was clients not releasing the connection, and then
-further connections are refused. You may tell by the value of `uftp.client_busy`.
-If the value is `True`, then the server still considers to be connected. In
-that case just restart the server with uftpd.restart(), or set `uftd.client_busy`
-to `False`
-In case the you want to see what happens at the server, you may set verbose to 2.
-just restart it with `uftpd.restart(verbose=2)`.
-You can do that also w/o restarting the server by setting `uftpd.verbose_l = 2`,
+The only trouble observed so far was clients not releasing the connections.
+You may tell by the value of `uftp.client_list`.
+which should be empty if not client is connected. In that case you may restart
+the server with uftpd.restart(). If `uftd.client_busy` is `True` when not client
+is connected, then restart the server with with `uftpd.restart()`
+If you want to see what happens at the server, you may set verbose to 2.
+Just restart it with `uftpd.restart(verbose=2)`, or set `uftpd.verbose_l = 2`,
 and `uftpd.verbose_l = 0` to stop control messages again.
