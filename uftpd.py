@@ -39,7 +39,6 @@ class FTP_client:
 
     def __init__(self, ftpsocket):
         self.command_client, remote_addr = ftpsocket.accept()
-###        self.command_client.settimeout(300) # 5 minutes timeout
         log_msg(1, "FTP connection from:", remote_addr)
         self.cwd = '/'
         self.fromname = None
@@ -124,7 +123,7 @@ class FTP_client:
                     if pi == len(pattern.rstrip("*?")): # only wildcards left
                         return True
                     while si < len(fname):
-                        if self.fncmp(fname[si:], pattern[pi+1:]) == True:
+                        if self.fncmp(fname[si:], pattern[pi + 1:]) == True:
                             return True
                         else:
                             si += 1
@@ -150,16 +149,6 @@ class FTP_client:
                 cl.sendall("520 No client instance\r\n")
                 return
 
-            if client_busy == True: # check if another client is busy
-                for i in range (600): # 1 Minute wait
-                    sleep_ms(100)
-                    if client_busy == False: 
-                        break
-            if client_busy == True:  # still busy after 1 Minute?
-                cl.sendall("451 Device busy.\r\n") # tell so the rmeote client
-                return # and quit
-            client_busy = True
-            
             data = cl.readline().decode("utf-8").rstrip("\r\n")
             if len(data) <= 0:
                 # Empty packet, either close or ignore
@@ -167,17 +156,23 @@ class FTP_client:
                     cl.close()
                     cl.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, None)
                     remove_client(cl)
-                    log_msg(1, "Empty packet, connection closed")
+                    log_msg(1, "*** Empty packet, connection closed")
                 else: # ignore
                     log_msg(2, "Empty packet ignored")
                     self.ignore_empty = False
-                client_busy = False
                 return
+
+            command = data.split(" ")[0].upper()
+
+            if client_busy == True: # check if another client is busy
+            # not clear yet if that code is ever executed
+                log_msg(2, "*** Device busy, command {} rejected".format(command))
+                cl.sendall("400 Device busy.\r\n") # tell so the remote client
+                return # and quit
+            client_busy = True # now it's my turn
                 
             data_client = None
             self.ignore_empty = False
-            
-            command = data.split(" ")[0].upper()
             payload = data[len(command):].lstrip() # partition is missing
             path = self.get_absolute_path(self.cwd, payload)
             log_msg(1, "Command={}, Payload={}, Path={}".format(command, payload, path))
@@ -265,7 +260,7 @@ class FTP_client:
                     self.fromname = path
                     cl.sendall("350 Rename from\r\n")
             elif command == "RNTO":
-                    if fromname is not None: 
+                    if self.fromname is not None: 
                         try:
                             uos.rename(self.fromname, path)
                             cl.sendall(msg_250_OK)
@@ -292,10 +287,9 @@ class FTP_client:
         # handle unexpected errors
         # close all connections & exit
         except Exception as err:
-            log_msg(0, "Exception in exec_ftp_command: {}, restarting server".format(err))
+            log_msg(0, "Exception in exec_ftp_command: {}".format(err))
             if data_client is not None:
                 data_client.close()
-##            restart() ### trial, maybe stop() is better, or do nothing
         client_busy = False
             
 def log_msg(level, *args):
