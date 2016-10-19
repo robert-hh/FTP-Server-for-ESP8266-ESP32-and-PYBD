@@ -144,10 +144,10 @@ class FTP_client:
         try:
             gc.collect()
 
-            # since there is no self, get the relevant instance of the class
-            client = get_client(cl)
-            if client == None: # Not found, which is a hard fail
-                cl.sendall("520 No client\r\n")
+            # since there is no self as function argument, get it from the list
+            self = get_client(cl)
+            if self == None: # Not found, which is a hard fail
+                cl.sendall("520 No client instance\r\n")
                 return
 
             if client_busy == True: # check if another client is busy
@@ -163,23 +163,23 @@ class FTP_client:
             data = cl.readline().decode("utf-8").rstrip("\r\n")
             if len(data) <= 0:
                 # Empty packet, either close or ignore
-                if client.ignore_empty == False: # close
+                if self.ignore_empty == False: # close
                     cl.close()
                     cl.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, None)
                     remove_client(cl)
                     log_msg(1, "Empty packet, connection closed")
                 else: # ignore
                     log_msg(2, "Empty packet ignored")
-                    client.ignore_empty = False
+                    self.ignore_empty = False
                 client_busy = False
                 return
                 
             data_client = None
-            client.ignore_empty = False
+            self.ignore_empty = False
             
             command = data.split(" ")[0].upper()
             payload = data[len(command):].lstrip() # partition is missing
-            path = client.get_absolute_path(client.cwd, payload)
+            path = self.get_absolute_path(self.cwd, payload)
             log_msg(1, "Command={}, Payload={}, Path={}".format(command, payload, path))
             
             if command == "USER" or command == "PASS":
@@ -196,16 +196,16 @@ class FTP_client:
                 cl.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, None)
                 remove_client(cl)
             elif command == "PWD":
-                cl.sendall('257 "{}"\r\n'.format(client.cwd))
+                cl.sendall('257 "{}"\r\n'.format(self.cwd))
             elif command == "CWD":
                 try:
                     files = uos.listdir(path)
-                    client.cwd = path
+                    self.cwd = path
                     cl.sendall(msg_250_OK)
                 except:
                     cl.sendall(msg_550_fail)
             elif command == "CDUP":
-                client.cwd = client.get_absolute_path(client.cwd, "..")
+                self.cwd = self.get_absolute_path(self.cwd, "..")
                 cl.sendall(msg_250_OK)
             elif command == "TYPE":
                 # probably should switch between binary and not
@@ -224,12 +224,12 @@ class FTP_client:
                 if not payload.startswith("-"):
                     place = path
                 else: 
-                    place = client.cwd
+                    place = self.cwd
                 try:
                     data_client, data_addr = datasocket.accept()
                     log_msg(2, "FTP Data connection from:", data_addr)
                     cl.sendall("150 Here comes the directory listing.\r\n")
-                    client.send_list_data(place, data_client, command == "LIST" or payload.startswith("-l"))
+                    self.send_list_data(place, data_client, command == "LIST" or payload.startswith("-l"))
                     cl.sendall("226 Done.\r\n")
                     data_client.close()
                 except:
@@ -239,7 +239,7 @@ class FTP_client:
                     data_client, data_addr = datasocket.accept()
                     log_msg(2, "FTP Data connection from:", data_addr)
                     cl.sendall("150 Opening data connection.\r\n")
-                    client.send_file_data(path, data_client)
+                    self.send_file_data(path, data_client)
                     cl.sendall("226 Transfer complete.\r\n")
                     data_client.close()
                 except:
@@ -249,10 +249,10 @@ class FTP_client:
                     data_client, data_addr = datasocket.accept()
                     log_msg(2, "FTP Data connection from:", data_addr)
                     cl.sendall("150 Ok to send data.\r\n")
-                    client.save_file_data(path, data_client, "w")
+                    self.save_file_data(path, data_client, "w")
                     cl.sendall("226 Transfer complete.\r\n")
                     data_client.close()
-                    client.ignore_empty = True
+                    self.ignore_empty = True
                 except:
                     cl.sendall(msg_550_fail)
             elif command == "DELE":
@@ -262,18 +262,18 @@ class FTP_client:
                 except:
                     cl.sendall(msg_550_fail)
             elif command == "RNFR":
-                    client.fromname = path
+                    self.fromname = path
                     cl.sendall("350 Rename from\r\n")
             elif command == "RNTO":
                     if fromname is not None: 
                         try:
-                            uos.rename(client.fromname, path)
+                            uos.rename(self.fromname, path)
                             cl.sendall(msg_250_OK)
                         except:
                             cl.sendall(msg_550_fail)
                     else:
                         cl.sendall(msg_550_fail)
-                    client.fromname = None
+                    self.fromname = None
             elif command == "RMD":
                 try:
                     uos.rmdir(path)
