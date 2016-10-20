@@ -165,7 +165,6 @@ class FTP_client:
             command = data.split(" ")[0].upper()
 
             if client_busy == True: # check if another client is busy
-            # not clear yet if that code is ever executed
                 log_msg(2, "*** Device busy, command {} rejected".format(command))
                 cl.sendall("400 Device busy.\r\n") # tell so the remote client
                 return # and quit
@@ -194,9 +193,11 @@ class FTP_client:
                 cl.sendall('257 "{}"\r\n'.format(self.cwd))
             elif command == "CWD":
                 try:
-                    files = uos.listdir(path)
-                    self.cwd = path
-                    cl.sendall(msg_250_OK)
+                    if (uos.stat(path)[0] & 0o170000) == 0o040000:
+                        self.cwd = path
+                        cl.sendall(msg_250_OK)
+                    else:
+                        cl.sendall(msg_550_fail)
                 except:
                     cl.sendall(msg_550_fail)
             elif command == "CDUP":
@@ -207,24 +208,22 @@ class FTP_client:
                 cl.sendall('200 Transfer mode set\r\n')
             elif command == "SIZE":
                 try:
-                    size = uos.stat(path)[6]
-                    cl.sendall('213 {}\r\n'.format(size))
+                    cl.sendall('213 {}\r\n'.format(uos.stat(path)[6]))
                 except:
                     cl.sendall(msg_550_fail)
             elif command == "PASV":
-                addr = network.WLAN().ifconfig()[0]
                 cl.sendall('227 Entering Passive Mode ({},{},{}).\r\n'.format(
-                    addr.replace('.',','), DATA_PORT>>8, DATA_PORT%256))
+                    network.WLAN().ifconfig()[0].replace('.',','), 
+                    DATA_PORT>>8, DATA_PORT%256))
             elif command == "LIST" or command == "NLST":
-                if not payload.startswith("-"):
-                    place = path
-                else: 
-                    place = self.cwd
                 try:
                     data_client, data_addr = datasocket.accept()
                     log_msg(2, "FTP Data connection from:", data_addr)
                     cl.sendall("150 Here comes the directory listing.\r\n")
-                    self.send_list_data(place, data_client, command == "LIST" or payload.startswith("-l"))
+                    self.send_list_data(
+                        self.cwd if payload.startswith("-") else path, 
+                        data_client,
+                        command == "LIST" or payload.startswith("-l"))
                     cl.sendall("226 Done.\r\n")
                     data_client.close()
                 except:
@@ -308,8 +307,8 @@ def get_client(cl):
     
 # remove a client from the list
 def remove_client(cl):
-    for i in range(len(client_list)):
-        if client_list[i].command_client == cl:
+    for i, client in enumerate(client_list):
+        if client.command_client == cl:
             del client_list[i]
             break
 
