@@ -15,8 +15,12 @@ The frozen bytecode variant is preferred.
 
 The server has some limitations:
 - Passive mode only
+- Binary mode only
 - Limited wildcard support for the ls and nlist commands. Only `*` and `?` are
 supported.
+- Limited multi-session support. The server accepts multiple sessions, but only
+one sessions command at a time is executed, which still allows interleaved actions.
+- Not all ftp commands are implemented.
 
 ## Startup
 
@@ -78,14 +82,17 @@ like XPWD instead of PWD, XCWD instead of CWD.
 
 **Android**
 
-- ES File Manager: Seems to work with file/directory view & navigate, file download
+- ES File Manager: Works with file/directory view & navigate, file download,
+file upload, file delete, file rename
 
 **Windows 10 mobile**
 
-- Metro file manager: File/directory viewing & navigate works, copying out from ESP8266 to.
-Storing back starts, but then stalls. Slow and chaotic sequence of FTP commands.
+- Metro file manager: Works with file/directory view & navigate, file download,
+file upload, file delete, file rename. Slow and chaotic sequence of FTP commands.
+Many unneeded re-login attempts.
 
-**Conclusion**: All dedicated ftp clients work fine, and most of the file managers too.
+**Conclusion**: All dedicated ftp clients except Windows ftp work fine, and most
+of the file managers too. Windows ftp should work if active mode is implemented.
 
 ## Trouble shooting
 The only trouble observed so far was clients not releasing the connections. You may tell
