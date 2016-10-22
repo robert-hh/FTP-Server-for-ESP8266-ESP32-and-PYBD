@@ -65,25 +65,26 @@ That is too much for this little server.
 
 - ftp: works like on Linux
 - Chrome, Firefox: view/navigate directories & and view files
+- FileZilla, FireFtp: Full operation, once proper configured (see above)
 - Finder: connects, but then locks in the attempt to display the
 top level directory repeating attemps to open new sessions.
-- FileZilla, FireFtp: Full operation, once proper configured (see above)
 
-**Windows 10**
+**Windows 10** (and Windows XP)
 
+- ftp: supported. Be aware that the Windows variant of ftp differs slightly
+from the Linux variant, but the most used commands are the same.
 - File explorer: view/navigate directories & and copy files. For editing files you
 have to copy them to your PC and back. Windows explorer does not always release the
 connection when it is closed, which just results in a silent connection, which
 is closed latest when Windows is shut down.
 - FileZilla, FireFtp: Full operation, once proper configured (see above)
-- ftp: practically useless, since passive mode is not supported and many
-non-standard commands are used for the communication to the server,
-like XPWD instead of PWD, XCWD instead of CWD.
 
 **Android**
 
+. ftp inside the terminal emulator termux: full operation.
 - ES File Manager: Works with file/directory view & navigate, file download,
 file upload, file delete, file rename
+- Chrome: view/navigate directories & and view files
 
 **Windows 10 mobile**
 
@@ -96,7 +97,7 @@ of the file managers too. Windows ftp should work if active mode is implemented.
 
 ## Trouble shooting
 The only trouble observed so far was clients not releasing the connections. You may tell
-by the value of `uftp.client_list` which should be empty if not client is connected.
+by the value of `uftp.client_list` which should be empty if no client is connected.
 In that case you may restart the server with uftpd.restart(). If `uftd.client_busy`
 is `True` when no client is connected, then restart the server with with
 `uftpd.restart()`. If you want to see what happens at the server, you may set verbose to 2.
