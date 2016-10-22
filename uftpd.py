@@ -1,4 +1,4 @@
-# 
+#
 # Small ftp server for ESP8266 Micropython
 # Based on the work of chrisgp - Christopher Popp and pfalcon - Paul Sokolovsky
 #
@@ -31,8 +31,10 @@ client_list = []
 verbose_l = 0
 client_busy = False
 
+msg_200_OK = '200 OK\r\n'
 msg_250_OK = '250 OK\r\n'
-msg_550_fail = '550 Failed\r\n'
+msg_504_fail = '504 Fail\r\n'
+msg_550_fail = '550 Fail\r\n'
 month_name = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 class FTP_client:
@@ -40,23 +42,28 @@ class FTP_client:
     def __init__(self, ftpsocket):
         self.command_client, remote_addr = ftpsocket.accept()
         log_msg(1, "FTP connection from:", remote_addr)
+        self.command_client.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, self.exec_ftp_command)
+        self.command_client.sendall("220 Hello, this is the ESP8266.\r\n")
         self.cwd = '/'
         self.fromname = None
         self.ignore_empty = False
-        self.command_client.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, self.exec_ftp_command)
-        self.command_client.sendall("220 Hello, this is the ESP8266.\r\n")
-
+        self.data_addr = None
+        self.data_port = 20
+        self.data_mode = False
 
     def send_list_data(self, path, data_client, full):
-        try: # whether path is a directory name
+        try:
             for fname in sorted(uos.listdir(path), key = str.lower):
                 data_client.sendall(self.make_description(path, fname, full))
         except: # path may be a file name or pattern
             path, pattern = self.split_path(path)
-            for fname in sorted(uos.listdir(path), key = str.lower):
-                if self.fncmp(fname, pattern) == True:
-                    data_client.sendall(self.make_description(path, fname, full))
-                    
+            try:
+                for fname in sorted(uos.listdir(path), key = str.lower):
+                    if self.fncmp(fname, pattern) == True:
+                        data_client.sendall(self.make_description(path, fname, full))
+            except:
+                pass
+        
     def make_description(self, path, fname, full):
         global month_name
         if full:
@@ -135,6 +142,16 @@ class FTP_client:
         else:
             return False
 
+    def open_dataclient(self):
+        if self.data_mode == False: # passive mode
+            data_client, self.data_addr = datasocket.accept()
+        else: # active mode
+            data_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            data_client.settimeout(10)
+            data_client.connect((self.data_addr, self.data_port))
+        log_msg(2, "FTP Data connection from/to:", self.data_addr)
+        return data_client
+
     @staticmethod        
     def exec_ftp_command(cl):
         global datasocket
@@ -175,13 +192,15 @@ class FTP_client:
             payload = data[len(command):].lstrip() # partition is missing
             path = self.get_absolute_path(self.cwd, payload)
             log_msg(1, "Command={}, Payload={}, Path={}".format(command, payload, path))
+            if command[0] == 'X': # map the X... commands
+                command = command[1:]
             
             if command == "USER" or command == "PASS":
                 cl.sendall("230 Logged in.\r\n")
             elif command == "SYST":
                 cl.sendall("215 UNIX Type: L8\r\n")
             elif command == "NOOP":
-                cl.sendall("200 OK\r\n")
+                cl.sendall(msg_200_OK)
             elif command == "FEAT":
                 cl.sendall("211 no-features\r\n")
             elif command == "QUIT":
@@ -203,9 +222,8 @@ class FTP_client:
             elif command == "CDUP":
                 self.cwd = self.get_absolute_path(self.cwd, "..")
                 cl.sendall(msg_250_OK)
-            elif command == "TYPE":
-                # probably should switch between binary and not
-                cl.sendall('200 Transfer mode set\r\n')
+            elif command == "TYPE": # only binary files
+                cl.sendall(msg_200_OK)
             elif command == "SIZE":
                 try:
                     cl.sendall('213 {}\r\n'.format(uos.stat(path)[6]))
@@ -215,10 +233,19 @@ class FTP_client:
                 cl.sendall('227 Entering Passive Mode ({},{},{}).\r\n'.format(
                     network.WLAN().ifconfig()[0].replace('.',','), 
                     DATA_PORT>>8, DATA_PORT%256))
+                self.data_mode = False
+            elif command == "PORT":
+                items = payload.split(",")
+                if len(items) >= 6:
+                    self.data_addr = '.'.join(items[:4])
+                    self.data_port = int(items[4]) * 256 + int(items[5])
+                    cl.sendall(msg_200_OK)
+                    self.data_mode = True
+                else:
+                    cl.sendall(msg_504_fail)
             elif command == "LIST" or command == "NLST":
                 try:
-                    data_client, data_addr = datasocket.accept()
-                    log_msg(2, "FTP Data connection from:", data_addr)
+                    data_client = self.open_dataclient()
                     cl.sendall("150 Here comes the directory listing.\r\n")
                     self.send_list_data(
                         self.cwd if payload.startswith("-") else path, 
@@ -230,20 +257,18 @@ class FTP_client:
                     cl.sendall(msg_550_fail)
             elif command == "RETR":
                 try:
-                    data_client, data_addr = datasocket.accept()
-                    log_msg(2, "FTP Data connection from:", data_addr)
+                    data_client = self.open_dataclient()
                     cl.sendall("150 Opening data connection.\r\n")
                     self.send_file_data(path, data_client)
                     cl.sendall("226 Transfer complete.\r\n")
                     data_client.close()
                 except:
                     cl.sendall(msg_550_fail)
-            elif command == "STOR":
+            elif command == "STOR" or command == "APPE":
                 try:
-                    data_client, data_addr = datasocket.accept()
-                    log_msg(2, "FTP Data connection from:", data_addr)
+                    data_client = self.open_dataclient()
                     cl.sendall("150 Ok to send data.\r\n")
-                    self.save_file_data(path, data_client, "w")
+                    self.save_file_data(path, data_client, "w" if command == "STOR" else "a")
                     cl.sendall("226 Transfer complete.\r\n")
                     data_client.close()
                     self.ignore_empty = True
@@ -287,7 +312,7 @@ class FTP_client:
         # close all connections & exit
         except Exception as err:
             log_msg(0, "Exception in exec_ftp_command: {}".format(err))
-            if data_client is not None:
+            if data_client is not None and self.data_mode == False:
                 data_client.close()
         client_busy = False
             
@@ -318,6 +343,7 @@ def accept_ftp_connect(ftpsocket):
         client_list.append(FTP_client(ftpsocket))
     except:
         log_msg(0, "Attempt to connect failed")
+        pass
 
 def stop():
     global ftpsocket, datasocket
@@ -329,8 +355,8 @@ def stop():
     del client_list
     client_list = []
     client_busy = False
-    ftpsocket.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, None)
     if ftpsocket is not None:
+        ftpsocket.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, None)
         ftpsocket.close()
     if datasocket is not None:
         datasocket.close()
@@ -357,6 +383,7 @@ def start(port=21, verbose = 0):
 
     ftpsocket.listen(0)
     datasocket.listen(0)
+
     datasocket.settimeout(10)
     ftpsocket.setsockopt(socket.SOL_SOCKET, SO_SETCALLBACK, accept_ftp_connect)
     
