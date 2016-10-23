@@ -14,12 +14,12 @@ of it must be compiled into bytecode using mpy-cross and loaded as an .mpy file.
 The frozen bytecode variant is preferred.
 
 The server has some limitations:
-- Passive mode only
 - Binary mode only
 - Limited wildcard support for the ls and nlist commands. Only `*` and `?` are
 supported.
 - Limited multi-session support. The server accepts multiple sessions, but only
-one sessions command at a time is executed, which still allows interleaved actions.
+one sessions command at a time is served while the other sessions receive a 'busy'
+response, which still allows interleaved actions.
 - Not all ftp commands are implemented.
 
 ## Startup
@@ -67,7 +67,8 @@ That is too much for this little server.
 - Chrome, Firefox: view/navigate directories & and view files
 - FileZilla, FireFtp: Full operation, once proper configured (see above)
 - Finder: connects, but then locks in the attempt to display the
-top level directory repeating attemps to open new sessions.
+top level directory repeating attemps to open new sessions. Finder needs
+full multi-session support.
 
 **Windows 10** (and Windows XP)
 
@@ -81,7 +82,7 @@ is closed latest when Windows is shut down.
 
 **Android**
 
-. ftp inside the terminal emulator termux: full operation.
+- ftp inside the terminal emulator termux: full operation.
 - ES File Manager: Works with file/directory view & navigate, file download,
 file upload, file delete, file rename
 - Chrome: view/navigate directories & and view files
