@@ -188,7 +188,7 @@ class FTP_client:
             self.ignore_empty = False
             payload = data[len(command):].lstrip() # partition is missing
             path = self.get_absolute_path(self.cwd, payload)
-            log_msg(1, "Command={}, Payload={}, Path={}".format(command, payload, path))
+            log_msg(1, "Command={}, Payload={}".format(command, payload))
             if command[0] == 'X': # map the X... commands
                 command = command[1:]
             
@@ -256,13 +256,18 @@ class FTP_client:
                 else:
                     cl.sendall('504 Fail\r\n')
             elif command == "LIST" or command == "NLST":
+                if payload.startswith("-"):
+                    option = payload.split()[0]
+                    path = self.get_absolute_path(self.cwd, payload[len(option) + 1:])
+                else:
+                    option = ""
                 try:
                     data_client = self.open_dataclient()
                     cl.sendall("150 Here comes the directory listing.\r\n")
                     self.send_list_data(
-                        self.cwd if payload.startswith("-") else path, 
+                        self.cwd if payload == "" else path, 
                         data_client,
-                        command == "LIST" or payload.startswith("-l"))
+                        command == "LIST" or option == "-l")
                     cl.sendall("226 Done.\r\n")
                     data_client.close()
                     data_client = None

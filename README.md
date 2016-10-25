@@ -83,6 +83,8 @@ connection when it is closed, which just results in a silent connection, which
 is closed latest when Windows is shut down.
 - FileZilla, FireFtp, Cyberduck: Full operation, once proper configured (see above).
 Configure Cyberduck to transfer data in the command session.
+- Mountainduck: Works to some extend, but because of explorer integration with
+the bad habit to a) load files in the background and b) sticky connections.
 
 **Android**
 
@@ -97,8 +99,8 @@ file upload, file delete, file rename
 file upload, file delete, file rename. Slow and chaotic sequence of FTP commands.
 Many unneeded re-login attempts.
 
-**Conclusion**: All dedicated ftp clients except Windows ftp work fine, and most
-of the file managers too. Windows ftp should work if active mode is implemented.
+**Conclusion**: All dedicated ftp clients work fine, and most
+of the file managers too.
 
 ## Trouble shooting
 The only trouble observed so far was clients not releasing the connections. You may tell
