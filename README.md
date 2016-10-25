@@ -18,9 +18,11 @@ The server has some limitations:
 - Limited wildcard support for the ls and nlist commands. Only `*` and `?` are
 supported.
 - Limited multi-session support. The server accepts multiple sessions, but only
-one sessions command at a time is served while the other sessions receive a 'busy'
+one session command at a time is served while the other sessions receive a 'busy'
 response, which still allows interleaved actions.
+- No user authentication. Any user may log in without a password.
 - Not all ftp commands are implemented.
+
 
 ## Startup
 
@@ -39,7 +41,7 @@ or
 `uftpd.restart([port = 21][, verbose = level])`  
 
 port is the port number (default 21)  
-verbose controls the level of printed activity messages, values 0, 1, 2
+verbose controls the level of printed activity messages, values 0, 1
 
 You may use  
 `uftd.restart([port = 21][, verbose = level])`  
@@ -65,10 +67,11 @@ That is too much for this little server.
 
 - ftp: works like on Linux
 - Chrome, Firefox: view/navigate directories & and view files
-- FileZilla, FireFtp: Full operation, once proper configured (see above)
+- FileZilla, FireFtp, Cyberduck: Full operation, once proper configured (see above).
+Configure Cyberduck to transfer data in the command session.
 - Finder: connects, but then locks in the attempt to display the
 top level directory repeating attemps to open new sessions. Finder needs
-full multi-session support.
+full multi-session support, and never closes sessions properly.
 
 **Windows 10** (and Windows XP)
 
@@ -78,7 +81,8 @@ from the Linux variant, but the most used commands are the same.
 have to copy them to your PC and back. Windows explorer does not always release the
 connection when it is closed, which just results in a silent connection, which
 is closed latest when Windows is shut down.
-- FileZilla, FireFtp: Full operation, once proper configured (see above)
+- FileZilla, FireFtp, Cyberduck: Full operation, once proper configured (see above).
+Configure Cyberduck to transfer data in the command session.
 
 **Android**
 
@@ -102,7 +106,7 @@ by the value of `uftp.client_list` which should be empty if no client is connect
 In that case you may restart the server with uftpd.restart(). If `uftd.client_busy`
 is `True` when no client is connected, then restart the server with with
 `uftpd.restart()`. If you want to see what happens at the server, you may set verbose to 2.
-Just restart it with  `uftpd.restart(verbose=2)`,  or set `uftpd.verbose_l = 2`, and
+Just restart it with  `uftpd.restart(verbose = 1)`,  or set `uftpd.verbose_l = 1`, and
 `uftpd.verbose_l = 0` to stop control messages again.
 
 ## Files
