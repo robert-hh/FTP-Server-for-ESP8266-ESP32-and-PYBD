@@ -72,6 +72,8 @@ Configure Cyberduck to transfer data in the command session.
 - Finder: connects, but then locks in the attempt to display the
 top level directory repeating attemps to open new sessions. Finder needs
 full multi-session support, and never closes sessions properly.
+- Mountainduck: Works well, including proper disconnect when closing.
+
 
 **Windows 10** (and Windows XP)
 
