@@ -85,8 +85,8 @@ connection when it is closed, which just results in a silent connection, which
 is closed latest when Windows is shut down.
 - FileZilla, FireFtp, Cyberduck: Full operation, once proper configured (see above).
 Configure Cyberduck to transfer data in the command session.
-- Mountainduck: Works to some extend, but because of explorer integration with
-the bad habit to a) load files in the background and b) sticky connections.
+- Mountainduck: Works to some extent, but sometines stumbles and takes a long
+time to open a file.
 
 **Android**
 

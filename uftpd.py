@@ -23,7 +23,7 @@ import gc
 from time import sleep_ms, localtime
 
 # constant definitions
-CHUNK_SIZE = const(256)
+CHUNK_SIZE = const(200)
 SO_REGISTER_CALLBACK = const(20)
 COMMAND_TIMEOUT = const(300)
 DATA_TIMEOUT = const(100)
@@ -49,7 +49,6 @@ class FTP_client:
         self.command_client.sendall("220 Hello, this is the ESP8266.\r\n")
         self.cwd = '/'
         self.fromname = None
-        self.ignore_empty = False
         self.data_addr = None
         self.data_port = 20
         self.data_mode = False
@@ -90,6 +89,9 @@ class FTP_client:
             while len(chunk) > 0:
                 data_client.sendall(chunk)
                 chunk = file.read(CHUNK_SIZE)
+            data_client.close()
+            return None
+                
 
     def save_file_data(self, path, data_client, mode):
         with open(path, mode) as file:
@@ -97,6 +99,8 @@ class FTP_client:
             while len(chunk) > 0:
                 file.write(chunk)
                 chunk = data_client.read(CHUNK_SIZE)
+            data_client.close()
+            return None
 
     def get_absolute_path(self, cwd, payload):
         # Just a few special cases "..", "." and ""
@@ -172,17 +176,13 @@ class FTP_client:
 
             data = cl.readline().decode("utf-8").rstrip("\r\n")
             if len(data) <= 0:
-                # Empty packet, either close or ignore
-                # This part is NOT CLEAN, since short tranfers do not cause an empty packet,
-                # and subsequent client terminations may not be detected.
-                if self.ignore_empty == False: # close
-                    cl.close()
-                    cl.setsockopt(socket.SOL_SOCKET, SO_REGISTER_CALLBACK, None)
-                    remove_client(cl)
-                    log_msg(2, "*** Empty packet, connection closed")
-                else: # ignore
-                    log_msg(2, "Empty packet ignored")
-                    self.ignore_empty = False
+                # No data, close
+                # This part is NOT CLEAN, there is still a chance that a closing data connection
+                # will be signalled as closing command connection; might be a bug
+                cl.close()
+                cl.setsockopt(socket.SOL_SOCKET, SO_REGISTER_CALLBACK, None)
+                remove_client(cl)
+                log_msg(2, "*** No data, assume QUIT")
                 return
 
             command = data.split(" ")[0].upper()
@@ -194,12 +194,11 @@ class FTP_client:
             client_busy = True # now it's my turn
                 
             data_client = None
-            self.ignore_empty = False
             payload = data[len(command):].lstrip() # partition is missing
             path = self.get_absolute_path(self.cwd, payload)
             log_msg(1, "Command={}, Payload={}".format(command, payload))
-            if command[0] == 'X': # map the X... commands
-                command = command[1:]
+            if command[0] == 'X': # map the X... commands to its counterpart
+                command = command[1:] # by dropping the X
             
             if command == "USER":
                 self.user = payload
@@ -208,10 +207,8 @@ class FTP_client:
                 cl.sendall("230 Logged in.\r\n")
             elif command == "SYST":
                 cl.sendall("215 UNIX Type: L8\r\n")
-            elif command in ("TYPE", "NOOP"): # just accept & ignore
+            elif command in ("TYPE", "NOOP", "ABOR"): # just accept & ignore
                 cl.sendall('200 OK\r\n')
-#            elif command == "FEAT":
-#                cl.sendall("211 no features.\r\n")
             elif command == "QUIT":
                 cl.sendall('221 Bye.\r\n')
                 cl.close()
@@ -283,7 +280,7 @@ class FTP_client:
                 try:
                     data_client = self.open_dataclient()
                     cl.sendall("150 Opening data connection.\r\n")
-                    self.send_file_data(path, data_client)
+                    data_client = self.send_file_data(path, data_client)
                     cl.sendall("226 Transfer complete.\r\n")
                 except:
                     cl.sendall('550 Fail\r\n')
@@ -291,9 +288,9 @@ class FTP_client:
                 try:
                     data_client = self.open_dataclient()
                     cl.sendall("150 Ok to send data.\r\n")
-                    self.save_file_data(path, data_client, "w" if command == "STOR" else "a")
+                    data_client = self.save_file_data(
+                                    path, data_client, "w" if command == "STOR" else "a")
                     cl.sendall("226 Transfer complete.\r\n")
-                    self.ignore_empty = True
                 except:
                     cl.sendall('550 Fail\r\n')
             elif command == "DELE":
