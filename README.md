@@ -15,12 +15,11 @@ The frozen bytecode variant is preferred.
 
 The server has some limitations:
 - Binary mode only
-- Limited wildcard support for the ls and nlist commands. Only `*` and `?` are
-supported.
 - Limited multi-session support. The server accepts multiple sessions, but only
 one session command at a time is served while the other sessions receive a 'busy'
 response, which still allows interleaved actions.
-- No user authentication. Any user may log in without a password.
+- No user authentication. Any user may log in without a password. User
+authentication may be added easily, if required.
 - Not all ftp commands are implemented.
 
 
@@ -30,7 +29,8 @@ You'll start the server with:
 
 `import uftpd`  
 
-The service will the immediately started at port 21. You may stop the service then with:  
+The service will immediately be started at port 21 in silent nmode. You may
+stop the service then with:  
 
 `utfpd.stop()`  
 
@@ -41,26 +41,29 @@ or
 `uftpd.restart([port = 21][, verbose = level])`  
 
 port is the port number (default 21)  
-verbose controls the level of printed activity messages, values 0, 1
+verbose controls the level of printed activity messages, values 0 .. 2
 
 You may use  
 `uftd.restart([port = 21][, verbose = level])`  
 as a shortcut for uftp.stop() and uftpd.start().
 
 ## Coverage
-The server works well with most dedicated ftp clients, and many browsers and file
+The server works well with most dedicated ftp clients, and most browsers and file
 managers. These are test results with an arbitratry selected set:
 
 **Linux**
 
 - ftp: works for file & directory operations including support for the m* commands
 - filezilla, fireftp: work fine, including loading into the editor & saving back.
-Take care to limit the number of data session to 1.
-- Nautilus 3.14.1: works mostly fine, including loading into the editor & saving back. Sometimes it does not close all client connections when the drive is ejected.
-The reason for the problem seems to be that nautilus tries to load the top level
-directory file list twice at the same time when returning to it from another directory.
-That is too much for this little server.
-- Thunar, Dolphin, Konqueror: work fine, including loading directly into e.g. an editor & saving back
+Take care to limit the number of data session to 1. fireftp **must** be used in
+passive mode (there may be a bug in fireftp), filezilla may be used in either mode.
+- Nautilus: works mostly fine, including loading into the editor & saving back.
+Once mounted, you can open a terminal at that spot. The path is someting like: /run/user/1000/gvfs/ftp:host=x.y.y.z. Ubutu's Nautilus 3.14.3 seems more robust
+than my debians 3.14.1 version.
+- Thunar: works fine, including loading
+directly into e.g. an editor & saving back.
+- Dolphin, Konqueror: work fine most of the time, including loading
+directly into e.g. an editor & saving back. But no obvious disconnect.
 - Chrome, Firefox: view/navigate directories & and view files
 
 **Mac OS X, various Versions**
@@ -106,7 +109,7 @@ of the file managers too.
 
 ## Trouble shooting
 The only trouble observed so far was clients not releasing the connections. You may tell
-by the value of `uftp.client_list` which should be empty if no client is connected.
+by the value of `uftp.client_list`, which should be empty if no client is connected, or by issuing the command rstat in ftp, which shows the number of connected clients.
 In that case you may restart the server with uftpd.restart(). If `uftd.client_busy`
 is `True` when no client is connected, then restart the server with with
 `uftpd.restart()`. If you want to see what happens at the server, you may set verbose to 2.

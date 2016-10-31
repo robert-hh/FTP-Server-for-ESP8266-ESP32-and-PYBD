@@ -35,7 +35,7 @@ datasocket = None
 client_list = []
 verbose_l = 0
 client_busy = False
-my_ip_addr = network.WLAN().ifconfig()[0]
+my_ip_addr = network.WLAN().ifconfig()[0].replace('.',',')
 
 month_name = ("", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
@@ -49,9 +49,10 @@ class FTP_client:
         self.command_client.sendall("220 Hello, this is the ESP8266.\r\n")
         self.cwd = '/'
         self.fromname = None
-        self.data_addr = None
+        self.data_addr = self.remote_addr[0]
         self.data_port = 20
-        self.data_mode = False
+        self.active = True
+#        self.logged_in = False
 
     def send_list_data(self, path, data_client, full):
         try:
@@ -91,7 +92,6 @@ class FTP_client:
                 chunk = file.read(CHUNK_SIZE)
             data_client.close()
             return None
-                
 
     def save_file_data(self, path, data_client, mode):
         with open(path, mode) as file:
@@ -150,7 +150,7 @@ class FTP_client:
             return False
 
     def open_dataclient(self):
-        if self.data_mode == False: # passive mode
+        if self.active == False: # passive mode
             data_client, self.data_addr = datasocket.accept()
         else: # active mode
             data_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -182,10 +182,14 @@ class FTP_client:
                 cl.close()
                 cl.setsockopt(socket.SOL_SOCKET, SO_REGISTER_CALLBACK, None)
                 remove_client(cl)
-                log_msg(2, "*** No data, assume QUIT")
+                log_msg(1, "*** No data, assume QUIT")
                 return
 
             command = data.split(" ")[0].upper()
+            # check for log-in state may done here, like
+            # if self.logged_in == False and not command in ("USER", "QUIT"):
+            #    cl.sendall("530 Not logged in.\r\n")
+            #    return
 
             if client_busy == True: # check if another client is busy
                 # log_msg(2, "*** Device busy, command {} rejected".format(command))
@@ -201,7 +205,7 @@ class FTP_client:
                 command = command[1:] # by dropping the X
             
             if command == "USER":
-                self.user = payload
+                # self.logged_in = True
                 cl.sendall("230 Logged in.\r\n")
             elif command == "PASS":
                 cl.sendall("230 Logged in.\r\n")
@@ -235,29 +239,30 @@ class FTP_client:
                     cl.sendall('550 Fail\r\n')
             elif command == "STAT":
                 if payload == "":
-                    cl.sendall("211-({}) MicroPython FTP Server status\r\n"
+                    cl.sendall("211-FTP Server status:\r\n"
                                "    Connected to ({})\r\n"
-                               "    Logged in as {}\r\n"
                                "    TYPE: Binary STRU: File MODE: Stream\r\n"
-                               "    Session timeout 300\r\n"
+                               "    Session timeout {}\r\n"
                                "    Client count is {}\r\n"
                                "211 End of Status\r\n".format(
-                               my_ip_addr, self.remote_addr[0], self.user, len(client_list)))
+                               self.remote_addr[0], COMMAND_TIMEOUT, len(client_list)))
                 else:
                     cl.sendall("213- Here comes the directory listing.\r\n")
                     self.send_list_data(path, cl, True)
                     cl.sendall("213 Done.\r\n")
             elif command == "PASV":
                 cl.sendall('227 Entering Passive Mode ({},{},{}).\r\n'.format(
-                    my_ip_addr.replace('.',','), DATA_PORT>>8, DATA_PORT%256))
-                self.data_mode = False
+                    my_ip_addr, DATA_PORT>>8, DATA_PORT%256))
+                self.active = False
             elif command == "PORT":
                 items = payload.split(",")
                 if len(items) >= 6:
                     self.data_addr = '.'.join(items[:4])
+                    if self.data_addr == "127.0.1.1": # 
+                        self.data_addr = self.remote_addr[0]
                     self.data_port = int(items[4]) * 256 + int(items[5])
                     cl.sendall('200 OK\r\n')
-                    self.data_mode = True
+                    self.active = True
                 else:
                     cl.sendall('504 Fail\r\n')
             elif command == "LIST" or command == "NLST":
