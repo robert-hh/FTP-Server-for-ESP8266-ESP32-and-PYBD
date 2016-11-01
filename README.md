@@ -55,12 +55,12 @@ managers. These are test results with an arbitratry selected set:
 
 - ftp: works for file & directory operations including support for the m* commands
 - filezilla, fireftp: work fine, including loading into the editor & saving back.
-Take care to limit the number of data session to 1. fireftp **must** be used in
-passive mode (there may be a bug in fireftp), filezilla may be used in either mode.
-- Nautilus: works mostly fine, including loading into the editor & saving back.
-Once mounted, you can open a terminal at that spot. The path is someting like: /run/user/1000/gvfs/ftp:host=x.y.y.z. Ubutu's Nautilus 3.14.3 seems more robust
-than my debians 3.14.1 version.
-- Thunar: works fine, including loading
+Take care to limit the number of data session to 1.
+- Nautilus: works fine, including loading into the editor & saving back.
+Configure Nautilus with dconf-editor to show directory count for local dirs only.
+Once mounted, you can even open a terminal at that spot.
+The path is someting like: /run/user/1000/gvfs/ftp:host=x.y.y.z.
+- Thunar: works fine, including loading & saving of files.
 directly into e.g. an editor & saving back.
 - Dolphin, Konqueror: work fine most of the time, including loading
 directly into e.g. an editor & saving back. But no obvious disconnect.
