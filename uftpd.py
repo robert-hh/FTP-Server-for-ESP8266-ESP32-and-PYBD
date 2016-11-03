@@ -45,7 +45,7 @@ class FTP_client:
     def __init__(self, ftpsocket):
         self.command_client, self.remote_addr = ftpsocket.accept()
         self.command_client.settimeout(COMMAND_TIMEOUT)
-        log_msg(1, "FTP connection from:", self.remote_addr)
+        log_msg(1, "FTP Command connection from:", self.remote_addr)
         self.command_client.setsockopt(socket.SOL_SOCKET, SO_REGISTER_CALLBACK, self.exec_ftp_command)
         self.command_client.sendall("220 Hello, this is the ESP8266.\r\n")
         self.cwd = '/'
@@ -249,7 +249,7 @@ class FTP_client:
             elif command == "LIST" or command == "NLST":
                 if payload.startswith("-"):
                     option = payload.split()[0]
-                    path = self.get_absolute_path(self.cwd, payload[len(option) + 1:])
+                    path = self.get_absolute_path(self.cwd, payload[len(option):].lstrip())
                 else:
                     option = ""
                 try:
