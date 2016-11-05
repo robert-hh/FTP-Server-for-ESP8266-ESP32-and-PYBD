@@ -91,12 +91,16 @@ Configure Cyberduck to transfer data in the command session.
 - Mountainduck: Works to some extent, but sometines stumbles and takes a long
 time to open a file.
 
-**Android**
+**Android tablet**
 
 - ftp inside the terminal emulator termux: full operation.
 - ES File Manager: Works with file/directory view & navigate, file download,
 file upload, file delete, file rename
 - Chrome: view/navigate directories & and view files
+
+**IOS 9.1**
+
+- FTP Client lite: works flawlessly
 
 **Windows 10 mobile**
 
