@@ -158,12 +158,11 @@ class FTP_client:
         log_msg(1, "FTP Data connection from/to:", self.data_addr)
         return data_client
 
-    @staticmethod        
-    def exec_ftp_command(cl):
+    def exec_ftp_command(self, cl):
         global datasocket
         global client_busy
         global my_ip_addr
-        
+
         try:
             gc.collect()
 
@@ -173,30 +172,23 @@ class FTP_client:
                 # No data, close
                 # This part is NOT CLEAN; there is still a chance that a closing data connection
                 # will be signalled as closing command connection
+                log_msg(1, "*** No data, assume QUIT")
                 cl.close()
                 cl.setsockopt(socket.SOL_SOCKET, SO_REGISTER_CALLBACK, None)
                 remove_client(cl)
-                log_msg(1, "*** No data, assume QUIT")
                 return
 
-            command = data.split(" ")[0].upper()
-            # check for log-in state may done here, like
-            # if self.logged_in == False and not command in ("USER", "PASS", "QUIT"):
-            #    cl.sendall("530 Not logged in.\r\n")
-            #    return
-
             if client_busy == True: # check if another client is busy
-                # log_msg(2, "*** Device busy, command {} rejected".format(command))
                 cl.sendall("400 Device busy.\r\n") # tell so the remote client
                 return # and quit
             client_busy = True # now it's my turn
 
-            # since there is no self as function argument, get it from the list
-            self = get_client(cl)
-            if self == None: # Not found, which is a hard fail
-                cl.sendall("520 No client instance\r\n")
-                return
+            # check for log-in state may done here, like
+            # if self.logged_in == False and not command in ("USER", "PASS", "QUIT"):
+            #    cl.sendall("530 Not logged in.\r\n")
+            #    return
                 
+            command = data.split(" ")[0].upper()
             payload = data[len(command):].lstrip() # partition is missing
             path = self.get_absolute_path(self.cwd, payload)
             log_msg(1, "Command={}, Payload={}".format(command, payload))
@@ -350,7 +342,7 @@ class FTP_client:
             log_msg(1, "Exception in exec_ftp_command: {}".format(err))
         # tidy up before leaving
         client_busy = False
-            
+
 def log_msg(level, *args):
     global verbose_l
     if verbose_l >= level:
@@ -358,13 +350,6 @@ def log_msg(level, *args):
             print(arg, end = "")
         print()
 
-# look for the client in client_list
-def get_client(cl):
-    for client in client_list:
-        if client.command_client == cl:
-            return client
-    return None
-    
 # remove a client from the list
 def remove_client(cl):
     for i, client in enumerate(client_list):
@@ -387,6 +372,7 @@ def stop():
 
     for client in client_list:
         client.command_client.close()
+        client.command_client.setsockopt(socket.SOL_SOCKET, SO_REGISTER_CALLBACK, None)
     del client_list
     client_list = []
     client_busy = False

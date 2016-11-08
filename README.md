@@ -4,7 +4,7 @@
 
 Based on the work of chrisgp - Christopher Popp and pfalcon - Paul Sokolovsky
 Christopher made a first uftp server script, which runs in foreground.
-Paul made webrepl with the framework for background oprations, which then was used
+Paul made webrepl with the framework for background operations, which then was used
 also by Christopher to implement his utelnetsever code.
 My task was to put all these pieces together and assemble this uftpd.py script,
 which runs in background and acts as ftp server.
@@ -21,6 +21,11 @@ response, which still allows interleaved actions.
 - No user authentication. Any user may log in without a password. User
 authentication may be added easily, if required.
 - Not all ftp commands are implemented.
+- ESP8266 is **NOT** a multitasking platform and the system calls are NOT reentrant.
+Even when the ftp server sits in background and can serve requests, **no
+foregroundtasks should run at that time**, epsecially if they execute system calls.
+The effects is hardly to predict, although most of the time the device simply
+crashes.
 
 
 ## Startup
@@ -100,7 +105,7 @@ file upload, file delete, file rename
 
 **IOS 9.1**
 
-- FTP Client lite: works flawlessly
+- FTP Client lite: works flawless
 
 **Windows 10 mobile**
 
