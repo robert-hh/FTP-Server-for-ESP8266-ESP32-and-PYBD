@@ -5,15 +5,15 @@
 # The server accepts passive mode only. It runs in background.
 # Start the server with:
 #
-# import ftpd
-# ftpd.start([port = 21][, verbose = level])
+# import uftpd
+# uftpd.start([port = 21][, verbose = level])
 #
 # port is the port number (default 21)
 # verbose controls the level of printed activity messages, values 0, 1, 2
 #
 # Copyright (c) 2016 Christopher Popp (initial ftp server framework)
 # Copyright (c) 2016 Paul Sokolovsky (background execution control structure)
-# Copyright (c) 2016 Robert Hammelrath (putting the pieces together and a few extensios)
+# Copyright (c) 2016 Robert Hammelrath (putting the pieces together and a few extensions)
 # Distributed under MIT License
 #
 import socket
@@ -36,8 +36,9 @@ datasocket = None
 client_list = []
 verbose_l = 0
 client_busy = False
-AP_addr = ("0.0.0.0", 0, 0)
-STA_addr = ("0.0.0.0", 0, 0)
+# Interfaces: (IP-Address (string), IP-Address (integer), Netmask (integer))
+AP_addr  = ("0.0.0.0", 0, 0xffffff00)
+STA_addr = ("0.0.0.0", 0, 0xffffff00)
 
 month_name = ("", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
@@ -46,6 +47,7 @@ class FTP_client:
     def __init__(self, ftpsocket):
         global AP_addr, STA_addr
         self.command_client, self.remote_addr = ftpsocket.accept()
+        self.remote_addr = self.remote_addr[0]
         self.command_client.settimeout(COMMAND_TIMEOUT)
         log_msg(1, "FTP Command connection from:", self.remote_addr)
         self.command_client.setsockopt(socket.SOL_SOCKET, SO_REGISTER_HANDLER, self.exec_ftp_command)
@@ -53,15 +55,17 @@ class FTP_client:
         self.cwd = '/'
         self.fromname = None
 #        self.logged_in = False
+        self.act_data_addr = self.remote_addr
         self.data_port = 20
-        self.act_data_addr = self.remote_addr[0]
         self.active = True
-        if ((AP_addr[1] & AP_addr[2]) == (num_ip(self.remote_addr[0]) & AP_addr[2])):
-            self.pas_data_addr = AP_addr[0]
-        elif ((STA_addr[1] & STA_addr[2]) == (num_ip(self.remote_addr[0]) & STA_addr[2])):
-            self.pas_data_addr = STA_addr[0]
+        # check which interface was used by comparing the caller's ip adress with the ip adresses 
+        # of STA and AP; consider netmask; select IP address for passive mode
+        if ((AP_addr[1] & AP_addr[2]) == (num_ip(self.remote_addr) & AP_addr[2])):
+            self.pasv_data_addr = AP_addr[0]
+        elif ((STA_addr[1] & STA_addr[2]) == (num_ip(self.remote_addr) & STA_addr[2])):
+            self.pasv_data_addr = STA_addr[0]
         else:
-            self.pas_data_addr = None
+            self.pasv_data_addr = "0.0.0.0" # Ivalid value
 
     def send_list_data(self, path, data_client, full):
         try:
@@ -157,14 +161,14 @@ class FTP_client:
             return False
 
     def open_dataclient(self):
-        if self.active == False: # passive mode
-            data_client, data_addr = datasocket.accept()
-            log_msg(1, "FTP Data connection from:", data_addr[0])
-        else: # active mode
+        if self.active == True: # active mode
             data_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             data_client.settimeout(DATA_TIMEOUT)
             data_client.connect((self.act_data_addr, self.data_port))
-            log_msg(1, "FTP Data connection to:", self.act_data_addr)
+            log_msg(1, "FTP Data connection with:", self.act_data_addr)
+        else: # passive mode
+            data_client, data_addr = datasocket.accept()
+            log_msg(1, "FTP Data connection with:", data_addr[0])
         return data_client
 
     def exec_ftp_command(self, cl):
@@ -230,14 +234,14 @@ class FTP_client:
                     cl.sendall('550 Fail\r\n')
             elif command == "PASV":
                 cl.sendall('227 Entering Passive Mode ({},{},{}).\r\n'.format(
-                    self.pas_data_addr.replace('.',','), DATA_PORT>>8, DATA_PORT%256))
+                    self.pasv_data_addr.replace('.',','), DATA_PORT>>8, DATA_PORT%256))
                 self.active = False
             elif command == "PORT":
                 items = payload.split(",")
                 if len(items) >= 6:
                     self.act_data_addr = '.'.join(items[:4])
                     if self.act_data_addr == "127.0.1.1": # replace by command session addr
-                        self.act_data_addr = self.remote_addr[0]
+                        self.act_data_addr = self.remote_addr
                     self.data_port = int(items[4]) * 256 + int(items[5])
                     cl.sendall('200 OK\r\n')
                     self.active = True
@@ -298,7 +302,7 @@ class FTP_client:
                                "    TYPE: Binary STRU: File MODE: Stream\r\n"
                                "    Session timeout {}\r\n"
                                "211 Client count is {}\r\n".format(
-                               self.remote_addr[0], self.pas_data_addr, COMMAND_TIMEOUT, len(client_list)))
+                               self.remote_addr, self.pasv_data_addr, COMMAND_TIMEOUT, len(client_list)))
                 else:
                     cl.sendall("213-Directory listing:\r\n")
                     self.send_list_data(path, cl, True)
@@ -427,11 +431,13 @@ def start(port=21, verbose = 0):
     wlan = network.WLAN(network.AP_IF)
     if wlan.active(): 
         ifconfig = wlan.ifconfig()
+        # save IP address string and numerical values of IP adress and netmask
         AP_addr = (ifconfig[0], num_ip(ifconfig[0]), num_ip(ifconfig[1]))
         print("FTP server started on {}:{}".format(ifconfig[0], port))
     wlan = network.WLAN(network.STA_IF)
     if wlan.active(): 
         ifconfig = wlan.ifconfig()
+        # save IP address string and numerical values of IP adress and netmask
         STA_addr = (ifconfig[0], num_ip(ifconfig[0]), num_ip(ifconfig[1]))
         print("FTP server started on {}:{}".format(ifconfig[0], port))
 
