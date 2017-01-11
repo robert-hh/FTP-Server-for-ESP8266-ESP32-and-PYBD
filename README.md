@@ -61,7 +61,9 @@ managers. These are test results with an arbitratry selected set:
 - ftp: works for file & directory operations including support for the m* commands
 - filezilla, fireftp: work fine, including loading into the editor & saving back.
 Take care to limit the number of data session to 1.
-- Nautilus: works fine, including loading into the editor & saving back.
+- Nautilus: works mostly, including loading into the editor & saving back.
+Copying multiple files at once to the esp8266 fails, because nautilus tries
+to open multiple sessions for that purpose.
 Configure Nautilus with dconf-editor to show directory count for local dirs only.
 Once mounted, you can even open a terminal at that spot.
 The path is someting like: /run/user/1000/gvfs/ftp:host=x.y.y.z.
@@ -77,7 +79,7 @@ directly into e.g. an editor & saving back. But no obvious disconnect.
 - Chrome, Firefox: view/navigate directories & and view files
 - FileZilla, FireFtp, Cyberduck: Full operation, once proper configured (see above).
 Configure Cyberduck to transfer data in the command session.
-- Finder: connects, but then locks in the attempt to display the
+- Finder: Fails. It connects, but then locks in the attempt to display the
 top level directory repeating attemps to open new sessions. Finder needs
 full multi-session support, and never closes sessions properly.
 - Mountainduck: Works well, including proper disconnect when closing.
