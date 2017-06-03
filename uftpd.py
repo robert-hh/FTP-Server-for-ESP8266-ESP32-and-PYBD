@@ -398,7 +398,7 @@ def stop():
         datasocket.close()
 
 # start listening for ftp connections on port 21
-def start(port=21, verbose = 0):
+def start(port=21, verbose = 0, splash = True):
     global ftpsocket, datasocket
     global verbose_l
     global client_list
@@ -430,17 +430,19 @@ def start(port=21, verbose = 0):
         ifconfig = wlan.ifconfig()
         # save IP address string and numerical values of IP adress and netmask
         AP_addr = (ifconfig[0], num_ip(ifconfig[0]), num_ip(ifconfig[1]))
-        print("FTP server started on {}:{}".format(ifconfig[0], port))
+        if splash:
+            print("FTP server started on {}:{}".format(ifconfig[0], port))
     wlan = network.WLAN(network.STA_IF)
     if wlan.active(): 
         ifconfig = wlan.ifconfig()
         # save IP address string and numerical values of IP adress and netmask
         STA_addr = (ifconfig[0], num_ip(ifconfig[0]), num_ip(ifconfig[1]))
-        print("FTP server started on {}:{}".format(ifconfig[0], port))
+        if splash:
+            print("FTP server started on {}:{}".format(ifconfig[0], port))
 
-def restart(port=21, verbose = 0):
+def restart(port=21, verbose = 0, splash = True):
     stop()
     sleep_ms(200)
-    start(port, verbose)
+    start(port, verbose, splash)
     
-start()
+# start(splash = True)

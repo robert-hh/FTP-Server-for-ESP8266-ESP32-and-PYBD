@@ -1,4 +1,4 @@
-# uftpd: small FTP server for ESP8266
+﻿# uftpd: small FTP server for ESP8266
 
 **Intro**
 
@@ -21,20 +21,20 @@ response, which still allows interleaved actions.
 - No user authentication. Any user may log in without a password. User
 authentication may be added easily, if required.
 - Not all ftp commands are implemented.
-- ESP8266 is **NOT** a multitasking platform and the system calls are NOT reentrant.
+- ESP8266 is **NOT** a multitasking platform and the system calls are NOT re-entrant.
 Even when the ftp server sits in background and can serve requests, **no
-foregroundtasks should run at that time**, epsecially if they execute system calls.
+foreground tasks should run at that time**, especially if they execute system calls.
 The effects is hardly to predict, although most of the time the device simply
 crashes.
 
 
-## Startup
+## Start-up
 
 You'll start the server with:  
 
 `import uftpd`  
 
-The service will immediately be started at port 21 in silent nmode. You may
+The service will immediately be started at port 21 in silent mode. You may
 stop the service then with:  
 
 `utfpd.stop()`  
@@ -54,7 +54,7 @@ as a shortcut for uftp.stop() and uftpd.start().
 
 ## Coverage
 The server works well with most dedicated ftp clients, and most browsers and file
-managers. These are test results with an arbitratry selected set:
+managers. These are test results with an arbitrary selected set:
 
 **Linux**
 
@@ -66,7 +66,7 @@ Copying multiple files at once to the esp8266 fails, because nautilus tries
 to open multiple sessions for that purpose.
 Configure Nautilus with dconf-editor to show directory count for local dirs only.
 Once mounted, you can even open a terminal at that spot.
-The path is someting like: /run/user/1000/gvfs/ftp:host=x.y.y.z.
+The path is something like: /run/user/1000/gvfs/ftp:host=x.y.y.z.
 - Thunar: works fine, including loading & saving of files.
 directly into e.g. an editor & saving back.
 - Dolphin, Konqueror: work fine most of the time, including loading
@@ -80,7 +80,7 @@ directly into e.g. an editor & saving back. But no obvious disconnect.
 - FileZilla, FireFtp, Cyberduck: Full operation, once proper configured (see above).
 Configure Cyberduck to transfer data in the command session.
 - Finder: Fails. It connects, but then locks in the attempt to display the
-top level directory repeating attemps to open new sessions. Finder needs
+top level directory repeating attempts to open new sessions. Finder needs
 full multi-session support, and never closes sessions properly.
 - Mountainduck: Works well, including proper disconnect when closing.
 
@@ -95,7 +95,7 @@ connection when it is closed, which just results in a silent connection, which
 is closed latest when Windows is shut down.
 - FileZilla, FireFtp, Cyberduck: Full operation, once proper configured (see above).
 Configure Cyberduck to transfer data in the command session.
-- Mountainduck: Works to some extent, but sometines stumbles and takes a long
+- Mountainduck: Works to some extent, but sometimes stumbles and takes a long
 time to open a file.
 
 **Android tablet**
