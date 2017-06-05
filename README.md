@@ -30,26 +30,26 @@ crashes.
 
 ## Start-up
 
-You'll start the server with:  
+You'll start the server with:
 
-`import uftpd`  
+`import uftpd`
 
 The service will immediately be started at port 21 in silent mode. You may
-stop the service then with:  
+stop the service then with:
 
-`utfpd.stop()`  
+`utfpd.stop()`
 
 When stopped or not started yet, start it manually with:
 
-`uftpd.start([port = 21][, verbose = level])`   
-or   
-`uftpd.restart([port = 21][, verbose = level])`  
+`uftpd.start([port = 21][, verbose = level])`
+or
+`uftpd.restart([port = 21][, verbose = level])`
 
-port is the port number (default 21)  
+port is the port number (default 21)
 verbose controls the level of printed activity messages, values 0 .. 2
 
-You may use  
-`uftd.restart([port = 21][, verbose = level])`  
+You may use
+`uftd.restart([port = 21][, verbose = level])`
 as a shortcut for uftp.stop() and uftpd.start().
 
 ## Coverage
@@ -95,6 +95,8 @@ connection when it is closed, which just results in a silent connection, which
 is closed latest when Windows is shut down.
 - FileZilla, FireFtp, Cyberduck: Full operation, once proper configured (see above).
 Configure Cyberduck to transfer data in the command session.
+- WinSCP: works fine
+- NppFTP - FTP extension to Notepad++: Works fine and is very convenient.
 - Mountainduck: Works to some extent, but sometimes stumbles and takes a long
 time to open a file.
 
@@ -128,6 +130,6 @@ Just restart it with  `uftpd.restart(verbose = 1)`,  or set `uftpd.verbose_l = 1
 `uftpd.verbose_l = 0` to stop control messages again.
 
 ## Files
-uftpd.py: Server source file  
-uftpd.mpy: Compiled version  
-README.md: This one  
+uftpd.py: Server source file
+uftpd.mpy: Compiled version
+README.md: This one
