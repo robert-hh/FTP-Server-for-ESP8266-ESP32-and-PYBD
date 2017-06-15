@@ -107,10 +107,10 @@ class FTP_client:
 
     def save_file_data(self, path, data_client, mode):
         with open(path, mode) as file:
-            chunk = data_client.read(_CHUNK_SIZE)
+            chunk = data_client.recv(_CHUNK_SIZE)
             while len(chunk) > 0:
                 file.write(chunk)
-                chunk = data_client.read(_CHUNK_SIZE)
+                chunk = data_client.recv(_CHUNK_SIZE)
             data_client.close()
 
     def get_absolute_path(self, cwd, payload):
@@ -445,4 +445,4 @@ def restart(port=21, verbose = 0, splash = True):
     sleep_ms(200)
     start(port, verbose, splash)
     
-# start(splash = True)
+start(splash = True)
