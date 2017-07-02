@@ -1,3 +1,18 @@
+#
+# Small ftp server for ESP8266 ans ESP32 Micropython
+#
+# Based on the work of chrisgp - Christopher Popp and pfalcon - Paul Sokolovsky
+#
+# The server accepts passive mode only. 
+# It runs in foreground and quits, when it receives a quit command
+# Start the server with:
+#
+# import ftp
+#
+# Copyright (c) 2016 Christopher Popp (initial ftp server framework)
+# Copyright (c) 2016 Robert Hammelrath (putting the pieces together and a few extensions)
+# Distributed under MIT License
+#
 import socket
 import network
 import uos
@@ -123,6 +138,7 @@ def ftpserver():
                     data = cl.readline().decode("utf-8").rstrip("\r\n")
                     if len(data) <= 0:
                         print("Client disappeared")
+                        do_run = False
                         break
 
                     command = data.split(" ")[0].upper()
