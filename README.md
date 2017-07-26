@@ -10,7 +10,7 @@ My task was to put all these pieces together and assemble this uftpd.py script,
 which runs in background and acts as ftp server.
 Due to its size, it either has to be integrated into the flash image as frozen
 bytecode, by placing it into the esp8266/modules folder and performing a rebuild,
-of it must be compiled into bytecode using mpy-cross and loaded as an .mpy file.
+or it must be compiled into bytecode using mpy-cross and loaded as an .mpy file.
 The frozen bytecode variant is preferred.
 
 The server has some limitations:
@@ -130,6 +130,6 @@ Just restart it with  `uftpd.restart(verbose = 1)`,  or set `uftpd.verbose_l = 1
 `uftpd.verbose_l = 0` to stop control messages again.
 
 ## Files
-uftpd.py: Server source file
-uftpd.mpy: Compiled version
-README.md: This one
+- uftpd.py: Server source file
+- uftpd.mpy: Compiled version
+- README.md: This one
