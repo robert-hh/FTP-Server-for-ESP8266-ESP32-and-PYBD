@@ -3,7 +3,7 @@
 #
 # Based on the work of chrisgp - Christopher Popp and pfalcon - Paul Sokolovsky
 #
-# The server accepts passive mode only. 
+# The server accepts passive mode only.
 # It runs in foreground and quits, when it receives a quit command
 # Start the server with:
 #
@@ -120,7 +120,17 @@ def ftpserver():
 
     msg_250_OK = '250 OK\r\n'
     msg_550_fail = '550 Failed\r\n'
-    addr = network.WLAN().ifconfig()[0]
+    wlan = network.WLAN(network.AP_IF)
+    if wlan.active():
+        ifconfig = wlan.ifconfig()
+    else:
+        wlan = network.WLAN(network.STA_IF)
+        if wlan.active():
+            ifconfig = wlan.ifconfig()
+        else:
+            print("No active connection")
+            return
+    addr = ifconfig[0]
     print("FTP Server started on ", addr)
     try:
         dataclient = None
