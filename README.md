@@ -131,5 +131,7 @@ Just restart it with  `uftpd.restart(verbose = 1)`,  or set `uftpd.verbose_l = 1
 
 ## Files
 - uftpd.py: Server source file
-- uftpd.mpy: Compiled version
+- ftp.py: Simple version of the ftp server, which works in foreground. This
+can be used with the ESP32 port. It terminates when the client closes the
+session. Only a single session is supported by this variant.
 - README.md: This one
