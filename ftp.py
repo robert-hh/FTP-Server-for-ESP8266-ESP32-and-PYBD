@@ -167,9 +167,9 @@ def ftpserver():
                         cl.sendall("200 OK\r\n")
                     elif command == "FEAT":
                         cl.sendall("211 no-features\r\n")
-                    elif command == "PWD":
+                    elif command == "PWD" or command == "XPWD":
                         cl.sendall('257 "{}"\r\n'.format(cwd))
-                    elif command == "CWD":
+                    elif command == "CWD" or command == "XCWD":
                         try:
                             files = uos.listdir(path)
                             cwd = path
@@ -197,6 +197,23 @@ def ftpserver():
                             addr.replace('.',','), DATA_PORT>>8, DATA_PORT%256))
                         dataclient, data_addr = datasocket.accept()
                         print("FTP Data connection from:", data_addr)
+                        DATA_PORT = 13333
+                        active = False
+                    elif command == "PORT":
+                        items = payload.split(",")
+                        if len(items) >= 6:
+                            data_addr = '.'.join(items[:4])
+                            if data_addr == "127.0.1.1": # replace by command session addr
+                                data_addr = remote_addr
+                            DATA_PORT = int(items[4]) * 256 + int(items[5])
+                            dataclient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            dataclient.settimeout(10)
+                            dataclient.connect((data_addr, DATA_PORT))
+                            print("FTP Data connection with:", data_addr)
+                            cl.sendall('200 OK\r\n')
+                            active = True
+                        else:
+                            cl.sendall('504 Fail\r\n')
                     elif command == "LIST" or command == "NLST":
                         if not payload.startswith("-"):
                             place = path
@@ -237,13 +254,13 @@ def ftpserver():
                             cl.sendall(msg_250_OK)
                         except:
                             cl.sendall(msg_550_fail)
-                    elif command == "RMD":
+                    elif command == "RMD"  or command == "XRMD":
                         try:
                             uos.rmdir(path)
                             cl.sendall(msg_250_OK)
                         except:
                             cl.sendall(msg_550_fail)
-                    elif command == "MKD":
+                    elif command == "MKD" or command == "XMKD":
                         try:
                             uos.mkdir(path)
                             cl.sendall(msg_250_OK)
