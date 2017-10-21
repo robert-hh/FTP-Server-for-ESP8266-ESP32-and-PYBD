@@ -120,17 +120,18 @@ def ftpserver():
 
     msg_250_OK = '250 OK\r\n'
     msg_550_fail = '550 Failed\r\n'
-    wlan = network.WLAN(network.AP_IF)
+    # check for an active interface, STA first
+    wlan = network.WLAN(network.STA_IF)
     if wlan.active():
-        ifconfig = wlan.ifconfig()
+        addr = wlan.ifconfig()[0]
     else:
-        wlan = network.WLAN(network.STA_IF)
+        wlan = network.WLAN(network.AP_IF)
         if wlan.active():
-            ifconfig = wlan.ifconfig()
+            addr = wlan.ifconfig()[0]
         else:
             print("No active connection")
             return
-    addr = ifconfig[0]
+
     print("FTP Server started on ", addr)
     try:
         dataclient = None
@@ -202,8 +203,8 @@ def ftpserver():
                         else:
                             place = cwd
                         try:
-                            send_list_data(place, dataclient, command == "LIST" or payload == "-l")
                             cl.sendall("150 Here comes the directory listing.\r\n")
+                            send_list_data(place, dataclient, command == "LIST" or payload == "-l")
                             cl.sendall("226 Listed.\r\n")
                         except:
                             cl.sendall(msg_550_fail)
@@ -212,8 +213,8 @@ def ftpserver():
                             dataclient = None
                     elif command == "RETR":
                         try:
-                            send_file_data(path, dataclient)
                             cl.sendall("150 Opening data connection.\r\n")
+                            send_file_data(path, dataclient)
                             cl.sendall("226 Transfer complete.\r\n")
                         except:
                             cl.sendall(msg_550_fail)
