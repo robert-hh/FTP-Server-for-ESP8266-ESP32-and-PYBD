@@ -1,4 +1,4 @@
-﻿# uftpd: small FTP server for ESP8266
+﻿# uftpd: small FTP server for ESP8266 and ESP32
 
 **Intro**
 
@@ -26,6 +26,8 @@ Even when the ftp server sits in background and can serve requests, **no
 foreground tasks should run at that time**, especially if they execute system calls.
 The effects is hardly to predict, although most of the time the device simply
 crashes.
+- ESP32 The server is supported from version='v1.9.3-575 on. That is the version
+which introduced webrepl.
 
 
 ## Start-up
@@ -130,8 +132,8 @@ Just restart it with  `uftpd.restart(verbose = 1)`,  or set `uftpd.verbose_l = 1
 `uftpd.verbose_l = 0` to stop control messages again.
 
 ## Files
-- uftpd.py: Server source file
+- uftpd.py: Server source file for ESP8266 and ESP32 from version='v1.9.3-575 on
 - ftp.py: Simple version of the ftp server, which works in foreground. This
-can be used with the ESP32 port. It terminates when the client closes the
+can be used with all Micorpython versions. It terminates when the client closes the
 session. Only a single session is supported by this variant.
 - README.md: This one
