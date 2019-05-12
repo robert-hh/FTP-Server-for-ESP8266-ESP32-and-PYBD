@@ -1,4 +1,4 @@
-﻿# uftpd: small FTP server for ESP8266 and ESP32
+﻿# uftpd: small FTP server for ESP8266, ESP32 and Pyboard D
 
 **Intro**
 
