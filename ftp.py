@@ -236,7 +236,7 @@ def ftpserver():
                         try:
                             cl.sendall("150 Here comes the directory listing.\r\n")
                             send_list_data(place, dataclient,
-                                           command == LIST" or payload == "-l")
+                                           command == "LIST" or payload == "-l")
                             cl.sendall("226 Listed.\r\n")
                         except:
                             cl.sendall(msg_550_fail)

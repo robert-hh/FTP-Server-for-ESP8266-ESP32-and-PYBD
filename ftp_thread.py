@@ -10,7 +10,8 @@
 # import ftp
 #
 # Copyright (c) 2016 Christopher Popp (initial ftp server framework)
-# Copyright (c) 2016 Robert Hammelrath (putting the pieces together and a few extensions)
+# Copyright (c) 2016 Robert Hammelrath (putting the pieces together
+# and a few extensions)
 # Distributed under MIT License
 #
 import socket
@@ -18,28 +19,34 @@ import network
 import uos
 import gc
 
+
 def send_list_data(path, dataclient, full):
-    try: # whether path is a directory name
-        for fname in sorted(uos.listdir(path), key = str.lower):
+    try:  # whether path is a directory name
+        for fname in sorted(uos.listdir(path), key=str.lower):
             dataclient.sendall(make_description(path, fname, full))
-    except: # path may be a file name or pattern
+    except:  # path may be a file name or pattern
         pattern = path.split("/")[-1]
         path = path[:-(len(pattern) + 1)]
-        if path == "": path = "/"
-        for fname in sorted(uos.listdir(path), key = str.lower):
-            if fncmp(fname, pattern) == True:
+        if path == "":
+            path = "/"
+        for fname in sorted(uos.listdir(path), key=str.lower):
+            if fncmp(fname, pattern):
                 dataclient.sendall(make_description(path, fname, full))
+
 
 def make_description(path, fname, full):
     if full:
-        stat = uos.stat(get_absolute_path(path,fname))
-        file_permissions = "drwxr-xr-x" if (stat[0] & 0o170000 == 0o040000) else "-rw-r--r--"
+        stat = uos.stat(get_absolute_path(path, fname))
+        file_permissions = "drwxr-xr-x"\
+            if (stat[0] & 0o170000 == 0o040000)\
+            else "-rw-r--r--"
         file_size = stat[6]
         description = "{}    1 owner group {:>10} Jan 1 2000 {}\r\n".format(
                 file_permissions, file_size, fname)
     else:
         description = fname + "\r\n"
     return description
+
 
 def send_file_data(path, dataclient):
     with open(path, "r") as file:
@@ -48,12 +55,14 @@ def send_file_data(path, dataclient):
             dataclient.sendall(chunk)
             chunk = file.read(512)
 
+
 def save_file_data(path, dataclient):
     with open(path, "w") as file:
         chunk = dataclient.recv(512)
         while len(chunk) > 0:
             file.write(chunk)
             chunk = dataclient.recv(512)
+
 
 def get_absolute_path(cwd, payload):
     # Just a few special cases "..", "." and ""
@@ -74,6 +83,7 @@ def get_absolute_path(cwd, payload):
                 cwd = cwd + '/' + token
     return cwd
 
+
 # compare fname against pattern. Pattern may contain
 # wildcards ? and *.
 def fncmp(fname, pattern):
@@ -84,21 +94,22 @@ def fncmp(fname, pattern):
             si += 1
             pi += 1
         else:
-            if pattern[pi] == '*': # recurse
+            if pattern[pi] == '*':  # recurse
                 if (pi + 1) == len(pattern):
                     return True
                 while si < len(fname):
-                    if fncmp(fname[si:], pattern[pi+1:]) == True:
+                    if fncmp(fname[si:], pattern[pi+1:]):
                         return True
                     else:
                         si += 1
                 return False
             else:
                 return False
-    if pi == len(pattern.rstrip("*"))  and si == len(fname):
+    if pi == len(pattern.rstrip("*")) and si == len(fname):
         return True
     else:
         return False
+
 
 def ftpserver(not_stop_on_quit):
 
@@ -194,7 +205,7 @@ def ftpserver(not_stop_on_quit):
                         break
                     elif command == "PASV":
                         cl.sendall('227 Entering Passive Mode ({},{},{}).\r\n'.format(
-                            addr.replace('.',','), DATA_PORT>>8, DATA_PORT%256))
+                            addr.replace('.', ','), DATA_PORT >> 8, DATA_PORT % 256))
                         dataclient, data_addr = datasocket.accept()
                         print("FTP Data connection from:", data_addr)
                         DATA_PORT = 13333
@@ -203,10 +214,12 @@ def ftpserver(not_stop_on_quit):
                         items = payload.split(",")
                         if len(items) >= 6:
                             data_addr = '.'.join(items[:4])
-                            if data_addr == "127.0.1.1": # replace by command session addr
+                            if data_addr == "127.0.1.1":
+                                # replace by command session addr
                                 data_addr = remote_addr
                             DATA_PORT = int(items[4]) * 256 + int(items[5])
-                            dataclient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            dataclient = socket.socket(socket.AF_INET,
+                                                       socket.SOCK_STREAM)
                             dataclient.settimeout(10)
                             dataclient.connect((data_addr, DATA_PORT))
                             print("FTP Data connection with:", data_addr)
@@ -220,8 +233,10 @@ def ftpserver(not_stop_on_quit):
                         else:
                             place = cwd
                         try:
-                            cl.sendall("150 Here comes the directory listing.\r\n")
-                            send_list_data(place, dataclient, command == "LIST" or payload == "-l")
+                            cl.sendall("150 Here comes the "
+                                       "directory listing.\r\n")
+                            send_list_data(place, dataclient,
+                                           command == "LIST" or payload == "-l")
                             cl.sendall("226 Listed.\r\n")
                         except:
                             cl.sendall(msg_550_fail)
@@ -254,7 +269,7 @@ def ftpserver(not_stop_on_quit):
                             cl.sendall(msg_250_OK)
                         except:
                             cl.sendall(msg_550_fail)
-                    elif command == "RMD"  or command == "XRMD":
+                    elif command == "RMD" or command == "XRMD":
                         try:
                             uos.rmdir(path)
                             cl.sendall(msg_250_OK)
@@ -283,15 +298,17 @@ def ftpserver(not_stop_on_quit):
                         if payload == "":
                             cl.sendall("211-Connected to ({})\r\n"
                                        "    Data address ({})\r\n"
-                                       "211 TYPE: Binary STRU: File MODE: Stream\r\n".format(
-                                       remote_addr[0], addr))
+                                       "211 TYPE: Binary STRU: File "
+                                       "MODE: Stream\r\n".format(
+                                        remote_addr[0], addr))
                         else:
                             cl.sendall("213-Directory listing:\r\n")
                             send_list_data(path, cl, True)
                             cl.sendall("213 Done.\r\n")
                     else:
                         cl.sendall("502 Unsupported command.\r\n")
-                        print("Unsupported command {} with payload {}".format(command, payload))
+                        print("Unsupported command {} with payload {}".
+                              format(command, payload))
             except Exception as err:
                 print(err)
 
