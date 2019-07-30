@@ -25,7 +25,7 @@ from time import sleep_ms, localtime
 from micropython import alloc_emergency_exception_buf
 
 # constant definitions
-_CHUNK_SIZE = const(200)
+_CHUNK_SIZE = const(1024)
 _SO_REGISTER_HANDLER = const(20)
 _COMMAND_TIMEOUT = const(300)
 _DATA_TIMEOUT = const(100)
