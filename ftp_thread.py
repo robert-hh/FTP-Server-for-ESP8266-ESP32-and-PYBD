@@ -294,6 +294,12 @@ def ftpserver(not_stop_on_quit):
                             else:
                                 cl.sendall(msg_550_fail)
                             fromname = None
+                    elif command == "MDTM":
+                        try:
+                            tm=localtime(uos.stat(path)[8])
+                            cl.sendall('213 {:04d}{:02d}{:02d}{:02d}{:02d}{:02d}\r\n'.format(*tm[0:6]))
+                        except:
+                            cl.sendall('550 Fail\r\n')
                     elif command == "STAT":
                         if payload == "":
                             cl.sendall("211-Connected to ({})\r\n"

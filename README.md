@@ -8,7 +8,7 @@ Paul made webrepl with the framework for background operations, which then was u
 also by Christopher to implement his utelnetsever code.
 My task was to put all these pieces together and assemble this uftpd.py script,
 which runs in background and acts as ftp server.
-Due to its size, it either has to be integrated into the flash image as frozen
+Due to its size, for ESP8266 it either has to be integrated into the flash image as frozen
 bytecode, by placing it into the esp8266/modules folder and performing a rebuild,
 or it must be compiled into bytecode using mpy-cross and loaded as an .mpy file.
 The frozen bytecode variant is preferred.
