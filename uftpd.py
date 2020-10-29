@@ -32,7 +32,7 @@ _DATA_TIMEOUT = const(100)
 _DATA_PORT = const(13333)
 
 # Global variables
-ftpsocket = None
+ftpsockets = []
 datasocket = None
 client_list = []
 verbose_l = 0
@@ -411,7 +411,7 @@ def num_ip(ip):
 
 
 def stop():
-    global ftpsocket, datasocket
+    global ftpsockets, datasocket
     global client_list
     global client_busy
 
@@ -422,16 +422,18 @@ def stop():
     del client_list
     client_list = []
     client_busy = False
-    if ftpsocket is not None:
-        ftpsocket.setsockopt(socket.SOL_SOCKET, _SO_REGISTER_HANDLER, None)
-        ftpsocket.close()
+    for sock in ftpsockets:
+        sock.setsockopt(socket.SOL_SOCKET, _SO_REGISTER_HANDLER, None)
+        sock.close()
+    ftpsockets = []
     if datasocket is not None:
         datasocket.close()
+        datasocket = None
 
 
 # start listening for ftp connections on port 21
 def start(port=21, verbose=0, splash=True):
-    global ftpsocket, datasocket
+    global ftpsockets, datasocket
     global verbose_l
     global client_list
     global client_busy
@@ -451,17 +453,18 @@ def start(port=21, verbose=0, splash=True):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(addr[0][4])
-        sock.listen(0)
+        sock.listen(1)
         sock.setsockopt(socket.SOL_SOCKET,
                         _SO_REGISTER_HANDLER,
                         lambda s : accept_ftp_connect(s, ifconfig[0]))
+        ftpsockets.append(sock)
         if splash:
             print("FTP server started on {}:{}".format(ifconfig[0], port))
 
     datasocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     datasocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     datasocket.bind(('0.0.0.0', _DATA_PORT))
-    datasocket.listen(0)
+    datasocket.listen(1)
     datasocket.settimeout(10)
 
 def restart(port=21, verbose=0, splash=True):
