@@ -38,8 +38,6 @@ client_list = []
 verbose_l = 0
 client_busy = False
 # Interfaces: (IP-Address (string), IP-Address (integer), Netmask (integer))
-AP_addr = ("0.0.0.0", 0, 0xffffff00)
-STA_addr = ("0.0.0.0", 0, 0xffffff00)
 
 _month_name = ("", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
@@ -47,8 +45,7 @@ _month_name = ("", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 
 class FTP_client:
 
-    def __init__(self, ftpsocket):
-        global AP_addr, STA_addr
+    def __init__(self, ftpsocket, local_addr):
         self.command_client, self.remote_addr = ftpsocket.accept()
         self.remote_addr = self.remote_addr[0]
         self.command_client.settimeout(_COMMAND_TIMEOUT)
@@ -63,17 +60,7 @@ class FTP_client:
         self.act_data_addr = self.remote_addr
         self.DATA_PORT = 20
         self.active = True
-        # check which interface was used by comparing the caller's ip
-        # adress with the ip adresses of STA and AP; consider netmask;
-        # select IP address for passive mode
-        if ((AP_addr[1] & AP_addr[2]) ==
-           (num_ip(self.remote_addr) & AP_addr[2])):
-            self.pasv_data_addr = AP_addr[0]
-        elif ((STA_addr[1] & STA_addr[2]) ==
-              (num_ip(self.remote_addr) & STA_addr[2])):
-            self.pasv_data_addr = STA_addr[0]
-        else:
-            self.pasv_data_addr = "0.0.0.0"  # Ivalid value
+        self.pasv_data_addr = local_addr
 
     def send_list_data(self, path, data_client, full):
         try:
@@ -403,10 +390,10 @@ def close_client(cl):
             break
 
 
-def accept_ftp_connect(ftpsocket):
+def accept_ftp_connect(ftpsocket, local_addr):
     # Accept new calls for the server
     try:
-        client_list.append(FTP_client(ftpsocket))
+        client_list.append(FTP_client(ftpsocket, local_addr))
     except:
         log_msg(1, "Attempt to connect failed")
         # try at least to reject
@@ -448,44 +435,34 @@ def start(port=21, verbose=0, splash=True):
     global verbose_l
     global client_list
     global client_busy
-    global AP_addr, STA_addr
 
     alloc_emergency_exception_buf(100)
     verbose_l = verbose
     client_list = []
     client_busy = False
 
-    ftpsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    for interface in [network.AP_IF, network.STA_IF]:
+        wlan = network.WLAN(interface)
+        if not wlan.active():
+            continue
+
+        ifconfig = wlan.ifconfig()
+        addr = socket.getaddrinfo(ifconfig[0], port)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(addr[0][4])
+        sock.listen(0)
+        sock.setsockopt(socket.SOL_SOCKET,
+                        _SO_REGISTER_HANDLER,
+                        lambda s : accept_ftp_connect(s, ifconfig[0]))
+        if splash:
+            print("FTP server started on {}:{}".format(ifconfig[0], port))
+
     datasocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    ftpsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     datasocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    ftpsocket.bind(('0.0.0.0', port))
     datasocket.bind(('0.0.0.0', _DATA_PORT))
-
-    ftpsocket.listen(0)
     datasocket.listen(0)
-
     datasocket.settimeout(10)
-    ftpsocket.setsockopt(socket.SOL_SOCKET,
-                         _SO_REGISTER_HANDLER, accept_ftp_connect)
-
-    wlan = network.WLAN(network.AP_IF)
-    if wlan.active():
-        ifconfig = wlan.ifconfig()
-        # save IP address string and numerical values of IP adress and netmask
-        AP_addr = (ifconfig[0], num_ip(ifconfig[0]), num_ip(ifconfig[1]))
-        if splash:
-            print("FTP server started on {}:{}".format(ifconfig[0], port))
-    wlan = network.WLAN(network.STA_IF)
-    if wlan.active():
-        ifconfig = wlan.ifconfig()
-        # save IP address string and numerical values of IP adress and netmask
-        STA_addr = (ifconfig[0], num_ip(ifconfig[0]), num_ip(ifconfig[1]))
-        if splash:
-            print("FTP server started on {}:{}".format(ifconfig[0], port))
-
 
 def restart(port=21, verbose=0, splash=True):
     stop()
