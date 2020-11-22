@@ -14,6 +14,7 @@
 # Copyright (c) 2016 Christopher Popp (initial ftp server framework)
 # Copyright (c) 2016 Paul Sokolovsky (background execution control structure)
 # Copyright (c) 2016 Robert Hammelrath (putting the pieces together and a
+# Copyright (c) 2020 Jan Wieck Use separate FTP servers per socket for STA + AP mode
 # few extensions)
 # Distributed under MIT License
 #
@@ -21,6 +22,7 @@ import socket
 import network
 import uos
 import gc
+import sys
 from time import sleep_ms, localtime
 from micropython import alloc_emergency_exception_buf
 
@@ -53,7 +55,7 @@ class FTP_client:
         self.command_client.setsockopt(socket.SOL_SOCKET,
                                        _SO_REGISTER_HANDLER,
                                        self.exec_ftp_command)
-        self.command_client.sendall("220 Hello, this is the ESP8266.\r\n")
+        self.command_client.sendall("220 Hello, this is the {}.\r\n".format(sys.platform))
         self.cwd = '/'
         self.fromname = None
 #        self.logged_in = False
