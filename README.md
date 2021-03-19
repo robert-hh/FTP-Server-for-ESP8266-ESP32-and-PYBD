@@ -13,6 +13,8 @@ bytecode, by placing it into the esp8266/modules folder and performing a rebuild
 or it must be compiled into bytecode using mpy-cross and loaded as an .mpy file.
 The frozen bytecode variant is preferred.
 
+## Limitations
+
 The server has some limitations:
 - Binary mode only
 - Limited multi-session support. The server accepts multiple sessions, but only
@@ -25,9 +27,13 @@ authentication may be added easily, if required.
 Even when the ftp server sits in background and can serve requests, **no
 foreground tasks should run at that time**, especially if they execute system calls.
 The effects is hardly to predict, although most of the time the device simply
-crashes.
+crashes. Also in turn, when using the SITE command, the code in the payload MUST NOT
+be blocking, because that will block the device.
 - ESP32 The server is supported from version='v1.9.3-575 on. That is the version
 which introduced webrepl.
+- The server uses a special setsocket option, which was introduced for webrepl
+and registers a callback handler. Both webrepl and uftpd use this mechanism and
+register their own exclusive handler. Therefore you canot use both at the same time.
 
 
 ## Start-up
