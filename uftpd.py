@@ -104,7 +104,7 @@ class FTP_client:
         return description
 
     def send_file_data(self, path, data_client):
-        with open(path, "r") as file:
+        with open(path, "rb") as file:
             chunk = file.read(_CHUNK_SIZE)
             while len(chunk) > 0:
                 data_client.sendall(chunk)
@@ -295,7 +295,7 @@ class FTP_client:
                     data_client = self.open_dataclient()
                     cl.sendall("150 Opened data connection.\r\n")
                     self.save_file_data(path, data_client,
-                                        "w" if command == "STOR" else "a")
+                                        "wb" if command == "STOR" else "ab")
                     # if the next statement is reached,
                     # the data_client was closed.
                     data_client = None

@@ -49,7 +49,7 @@ def make_description(path, fname, full):
 
 
 def send_file_data(path, dataclient):
-    with open(path, "r") as file:
+    with open(path, "rb") as file:
         chunk = file.read(512)
         while len(chunk) > 0:
             dataclient.sendall(chunk)
@@ -57,7 +57,7 @@ def send_file_data(path, dataclient):
 
 
 def save_file_data(path, dataclient):
-    with open(path, "w") as file:
+    with open(path, "wb") as file:
         chunk = dataclient.recv(512)
         while len(chunk) > 0:
             file.write(chunk)
