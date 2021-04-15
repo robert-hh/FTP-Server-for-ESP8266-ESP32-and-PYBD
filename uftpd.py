@@ -86,19 +86,16 @@ class FTP_client:
                                 if (stat[0] & 0o170000 == 0o040000)
                                 else "-rw-r--r--")
             file_size = stat[6]
-            try:
-                tm = localtime(stat[7])
-                if tm[0] != localtime()[0]:
-                    description = "{} 1 owner group {:>10} {} {:2} {:>5} {}\r\n".\
-                        format(file_permissions, file_size,
-                            _month_name[tm[1]], tm[2], tm[0], fname)
-                else:
-                    description = "{} 1 owner group {:>10} {} {:2} {:02}:{:02} {}\r\n".\
-                        format(file_permissions, file_size,
-                            _month_name[tm[1]], tm[2], tm[3], tm[4], fname)
-            except OverflowError:
-                description = "{} 1 owner group {:>10}              {}\r\n".\
-                    format(file_permissions, file_size, fname)
+            tm = stat[7] & 0xffffffff
+            tm = localtime(tm if tm < 0x80000000 else tm - 0x100000000)
+            if tm[0] != localtime()[0]:
+                description = "{} 1 owner group {:>10} {} {:2} {:>5} {}\r\n".\
+                    format(file_permissions, file_size,
+                        _month_name[tm[1]], tm[2], tm[0], fname)
+            else:
+                description = "{} 1 owner group {:>10} {} {:2} {:02}:{:02} {}\r\n".\
+                    format(file_permissions, file_size,
+                        _month_name[tm[1]], tm[2], tm[3], tm[4], fname)
         else:
             description = fname + "\r\n"
         return description
