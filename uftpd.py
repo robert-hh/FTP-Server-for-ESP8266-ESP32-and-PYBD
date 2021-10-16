@@ -23,6 +23,7 @@ import network
 import uos
 import gc
 import sys
+import errno
 from time import sleep_ms, localtime
 from micropython import alloc_emergency_exception_buf
 
@@ -376,6 +377,12 @@ class FTP_client:
                 # log_msg(2,
                 #  "Unsupported command {} with payload {}".format(command,
                 #  payload))
+        except OSError as err:
+            if verbose_l > 0:
+                log_msg(1, "Exception in exec_ftp_command:")
+                sys.print_exception(err)
+            if err.errno in (errno.ECONNABORTED, errno.ENOTCONN):
+                close_client(cl)
         # handle unexpected errors
         except Exception as err:
             log_msg(1, "Exception in exec_ftp_command: {}".format(err))
