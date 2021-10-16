@@ -33,6 +33,8 @@ _COMMAND_TIMEOUT = const(300)
 _DATA_TIMEOUT = const(100)
 _DATA_PORT = const(13333)
 
+buffer = bytearray(_CHUNK_SIZE)
+
 # Global variables
 ftpsockets = []
 datasocket = None
@@ -101,19 +103,21 @@ class FTP_client:
         return description
 
     def send_file_data(self, path, data_client):
+        mv = memoryview(buffer)
         with open(path, "rb") as file:
-            chunk = file.read(_CHUNK_SIZE)
-            while len(chunk) > 0:
-                data_client.sendall(chunk)
-                chunk = file.read(_CHUNK_SIZE)
+            bytes_read = file.readinto(buffer)
+            while bytes_read > 0:
+                data_client.write(mv[0:bytes_read])
+                bytes_read = file.readinto(buffer)
             data_client.close()
 
     def save_file_data(self, path, data_client, mode):
+        mv = memoryview(buffer)
         with open(path, mode) as file:
-            chunk = data_client.recv(_CHUNK_SIZE)
-            while len(chunk) > 0:
-                file.write(chunk)
-                chunk = data_client.recv(_CHUNK_SIZE)
+            bytes_read = data_client.readinto(buffer)
+            while bytes_read > 0:
+                file.write(mv[0:bytes_read])
+                bytes_read = data_client.readinto(buffer)
             data_client.close()
 
     def get_absolute_path(self, cwd, payload):
