@@ -14,8 +14,9 @@
 # Copyright (c) 2016 Christopher Popp (initial ftp server framework)
 # Copyright (c) 2016 Paul Sokolovsky (background execution control structure)
 # Copyright (c) 2016 Robert Hammelrath (putting the pieces together and a
-# Copyright (c) 2020 Jan Wieck Use separate FTP servers per socket for STA + AP mode
 # few extensions)
+# Copyright (c) 2020 Jan Wieck Use separate FTP servers per socket for STA + AP mode
+# Copyright (c) 2021 JD Smith Use a preallocated buffer and improve error handling.
 # Distributed under MIT License
 #
 import socket
@@ -33,8 +34,6 @@ _SO_REGISTER_HANDLER = const(20)
 _COMMAND_TIMEOUT = const(300)
 _DATA_TIMEOUT = const(100)
 _DATA_PORT = const(13333)
-
-buffer = bytearray(_CHUNK_SIZE)
 
 # Global variables
 ftpsockets = []
@@ -104,6 +103,7 @@ class FTP_client:
         return description
 
     def send_file_data(self, path, data_client):
+        buffer = bytearray(_CHUNK_SIZE)
         mv = memoryview(buffer)
         with open(path, "rb") as file:
             bytes_read = file.readinto(buffer)
@@ -113,6 +113,7 @@ class FTP_client:
             data_client.close()
 
     def save_file_data(self, path, data_client, mode):
+        buffer = bytearray(_CHUNK_SIZE)
         mv = memoryview(buffer)
         with open(path, mode) as file:
             bytes_read = data_client.readinto(buffer)
