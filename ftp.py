@@ -111,7 +111,7 @@ def fncmp(fname, pattern):
         return False
 
 
-def ftpserver(port=21):
+def ftpserver(port=21, timeout=None):
 
     DATA_PORT = 13333
 
@@ -125,7 +125,7 @@ def ftpserver(port=21):
     datasocket.bind(socket.getaddrinfo("0.0.0.0", DATA_PORT)[0][4])
 
     ftpsocket.listen(1)
-    ftpsocket.settimeout(None)
+    ftpsocket.settimeout(timeout)
     datasocket.listen(1)
     datasocket.settimeout(None)
 
@@ -321,6 +321,8 @@ def ftpserver(port=21):
             finally:
                 cl.close()
                 cl = None
+    except Exception as e:
+        print(e)
     finally:
         datasocket.close()
         ftpsocket.close()
@@ -328,4 +330,4 @@ def ftpserver(port=21):
             dataclient.close()
 
 
-ftpserver()
+# ftpserver()
