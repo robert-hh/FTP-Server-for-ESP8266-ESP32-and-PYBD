@@ -42,7 +42,7 @@ You'll start the server with:
 The service will immediately be started at port 21 in silent mode. You may
 stop the service then with:
 
-`utfpd.stop()`
+`uftpd.stop()`
 
 When stopped or not started yet, start it manually with:
 
