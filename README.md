@@ -49,7 +49,7 @@ managers. These are test results with an arbitrary selected set:
 **Linux**
 
 - ftp: works for file & directory operations including support for the m* commands
-- filezilla, fireftp: work fine, including loading into the editor & saving back.
+- filezilla: including loading into the editor & saving back.
   Take care to limit the number of data session to 1.
 - Nautilus: works mostly, including loading into the editor & saving back.
     Copying multiple files at once to the esp8266 fails, because nautilus tries
@@ -67,7 +67,7 @@ managers. These are test results with an arbitrary selected set:
 
 - Linux: ftp works 
 - Chrome, Firefox: view/navigate directories & and view files
-- FileZilla, FireFtp, Cyberduck: Full operation, once proper configured (see above).
+- FileZilla, Cyberduck: Full operation, once proper configured (see above).
 Configure Cyberduck to transfer data in the command session.
 - Finder: Fails. It connects, but then locks in the attempt to display the top level directory 
 - Mountainduck: Works well
@@ -80,7 +80,7 @@ Configure Cyberduck to transfer data in the command session.
     Windows explorer does not always release the
 connection when it is closed, which just results in a silent connection, which
 is closed latest when Windows is shut down.
-- FileZilla, FireFtp, Cyberduck: Full operation, once proper configured (see above).
+- FileZilla, Cyberduck: Full operation, once proper configured (see above).
 Configure Cyberduck to transfer data in the command session.
 - WinSCP: works fine
 - NppFTP - FTP extension to Notepad++: Works fine and is very convenient.
