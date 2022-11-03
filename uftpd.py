@@ -188,7 +188,11 @@ class FTP_client:
         try:
             gc.collect()
 
-            data = cl.readline().decode("utf-8").rstrip("\r\n")
+            try:
+                data = cl.readline().decode("utf-8").rstrip("\r\n")
+            except OSError:
+                # treat an error as QUIT situation.
+                data = ""
 
             if len(data) <= 0:
                 # No data, close
