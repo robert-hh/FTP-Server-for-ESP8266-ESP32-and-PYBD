@@ -1,0 +1,10 @@
+{
+  "urls": [
+    ["ftp.py", "github:robert-hh/FTP-Server-for-ESP8266-ESP32-and-PYBD/ftp.py"],
+    ["ftp_pycom.py", "github:robert-hh/FTP-Server-for-ESP8266-ESP32-and-PYBD/ftp_pycom.py"],
+    ["ftp_thread.py", "github:robert-hh/FTP-Server-for-ESP8266-ESP32-and-PYBD/ftp_thread.py"],
+    ["uftpd.py", "github:robert-hh/FTP-Server-for-ESP8266-ESP32-and-PYBD/uftpd.py"]
+  ],
+  "version": "1.0.0",
+  "deps": []
+}
